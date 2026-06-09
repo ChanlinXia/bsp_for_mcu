@@ -1,4 +1,5 @@
-*inc\
-*src\
+!inc/
+!src/
+!config/
 
-*CMakeLists.txt
+!CMakeLists.txt
