@@ -19,10 +19,9 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "gpio.h"
 
 /* USER CODE BEGIN 0 */
-#include <stdio.h>
+#include "bsp_gpio.h"
 /* USER CODE END 0 */
 
 /*----------------------------------------------------------------------------*/
