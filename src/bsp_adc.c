@@ -36,7 +36,7 @@ static uint16_t _adc_getValue(struct dev_adc_vt* self,uint8_t channel);
 static struct dev_adc_vt s_adc_vt ={
   .start = _adc_start,
   .stop = _adc_stop,
-  .getValue = _adc_getValue,
+  .get_value = _adc_getValue,
 };
 
 /*********************************************************************************************************
@@ -118,7 +118,7 @@ void ADC_DevRegister(void* conf) {
   dev_adc_conf* config=(dev_adc_conf*)conf;
   static uint8_t s_cnt=0;
 
-  BSP_Assert(ind <DEV_ADC_NUM);
+  BSP_Assert(s_cnt <DEV_ADC_NUM,"can't register the adc dev");
   struct dev_adc* obj = &s_adc_list[s_cnt++];
 
   obj->vt = &s_adc_vt;
@@ -137,7 +137,7 @@ void ADC_DevRegister(void* conf) {
 *   @note
 *********************************************************************************************************/
 void ADC_DevGet(struct dev_adc_vt** obj,uint8_t ind) {
-  BSP_Assert(ind <DEV_ADC_NUM);
+  BSP_Assert(ind <DEV_ADC_NUM,"can't ");
 
   *obj = (struct dev_adc_vt*) &s_adc_list[ind];
 }

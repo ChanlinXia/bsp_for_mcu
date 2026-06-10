@@ -135,7 +135,7 @@ void UART_DevRegister(void* conf)
 {
     static uint8_t s_cnt=0;
 
-    Assert(s_cnt < UART_NUM,"can't get UART Dev");
+    BSP_Assert(s_cnt < UART_NUM,"can't get UART Dev");
 
 
     dev_uart_conf* uart_conf=(dev_uart_conf*)conf;
@@ -156,7 +156,7 @@ void UART_DevRegister(void* conf)
 *********************************************************************************************************/
 void UART_DevGet(struct dev_uart_vt** obj,uint8_t ind)
 {
-    Assert(ind < UART_NUM,"can't get UART Dev");
+    BSP_Assert(ind < UART_NUM,"can't get UART Dev");
 
     *obj=(struct dev_uart_vt*)&s_dev_uart_list[ind];
 }

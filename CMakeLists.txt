@@ -12,6 +12,6 @@ add_library(bsp STATIC
 
 target_include_directories(bsp
 PUBLIC 
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${CMAKE_CURRENT_SOURCE_DIR}/config
-)t
+)

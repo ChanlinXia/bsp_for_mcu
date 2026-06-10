@@ -19,7 +19,7 @@
 /*********************************************************************************************************
 *                                              Macro
 *********************************************************************************************************/
-#define BSP_Assert(x,info) do{ if(!x) printf("BSP_Assert at [%s:%d]: %s\n", __FILE__, __LINE__,info); while(1){}}while(0)
+#define BSP_Assert(x,info) do{ if(!x){ printf("BSP_Assert at [%s:%d]: %s\n", __FILE__, __LINE__,info); while(1){}}}while(0)
 
 
 #define DEV_GPIO_NUM 6

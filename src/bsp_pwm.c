@@ -37,7 +37,7 @@ struct dev_pwm
 *                                              Static Declaration
 *********************************************************************************************************/
 // static function dec
-static void _start(struct dev_pwm_vt* self);
+static void _adc_start(struct dev_pwm_vt* self);
 static void _stop(struct dev_pwm_vt* self);
 
 static void _set_duty(struct dev_pwm_vt* self,float duty);
@@ -51,7 +51,7 @@ static struct dev_pwm s_dev_pwm_list[PWM_NUM]={};
 // static virtual function list
 static struct dev_pwm_vt s_pwm_vt =
 {
-    .start = _start,
+    .start = _adc_start,
     .stop = _stop,
 
     .set_duty = _set_duty,
@@ -70,7 +70,7 @@ static struct dev_pwm_vt s_pwm_vt =
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static void _start(struct dev_pwm_vt* self)
+static void _adc_start(struct dev_pwm_vt* self)
 {
     struct dev_pwm* this = (struct dev_pwm*)self;
 
@@ -184,7 +184,7 @@ void PWM_DevRegister(void* conf)
 {
     static uint8_t s_cnt=0;
 
-    Assert(s_cnt < PWM_NUM,"can't register PWM Dev");
+    BSP_Assert(s_cnt < PWM_NUM,"can't register PWM Dev");
 
 
     dev_pwm_conf* pwm_conf = (dev_pwm_conf*)conf;
@@ -210,7 +210,7 @@ void PWM_DevRegister(void* conf)
 *********************************************************************************************************/
 void PWM_DevGet(struct dev_pwm_vt** obj,uint8_t ind)
 {
-    Assert(ind < PWM_NUM,"can't get PWM Dev");
+    BSP_Assert(ind < PWM_NUM,"can't get PWM Dev");
 
     *obj = (struct dev_pwm_vt*)&s_dev_pwm_list[ind];
 }
