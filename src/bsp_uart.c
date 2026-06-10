@@ -8,146 +8,155 @@
 /*********************************************************************************************************
 *                                              Header
 *********************************************************************************************************/
-#include "spi.h"
+#include "bsp_uart.h"
 
 /*********************************************************************************************************
 *                                              Private Macro
 *********************************************************************************************************/
-#ifdef DEV_SPI_NUM
-#define SPI_NUM DEV_SPI_NUM
+#ifdef DEV_UART_NUM
+#define UART_NUM DEV_UART_NUM
 #else
-#define SPI_NUM 1
+#define UART_NUM 1
 #endif
 
 /*********************************************************************************************************
 *                                              Private Declaration
 *********************************************************************************************************/
-struct dev_spi
+struct dev_uart
 {
-    struct dev_spi_vt* vt;
+    struct dev_uart_vt* vt;
 
-    SPI_HandleTypeDef* hspi;
+    UART_HandleTypeDef* huart;
 };
 
 /*********************************************************************************************************
 *                                              Static Declaration
 *********************************************************************************************************/
-// static function decl
-static void _transmit(struct dev_spi_vt* self,uint8_t* tx_buf,uint16_t len);
-static void _receive(struct dev_spi_vt* self,uint8_t* rx_buf,uint16_t len);
-static void _transfer(struct dev_spi_vt* self,uint8_t* tx_buf,uint8_t* rx_buf,uint16_t len);
+// static function dec
+static void _send(struct dev_uart_vt* self,uint8_t* tx_buf,uint16_t len);
+static void _recv(struct dev_uart_vt* self,uint8_t* rx_buf,uint16_t len);
+
+static void _send_recv(struct dev_uart_vt* self,
+                       uint8_t* tx_buf,
+                       uint16_t tx_len,
+                       uint8_t* rx_buf,
+                       uint16_t rx_len);
+
+// static device list
+static struct dev_uart s_dev_uart_list[UART_NUM]={};
 
 // static virtual function list
-static struct dev_spi s_dev_spi_list[SPI_NUM]={};
-
-static struct dev_spi_vt s_spi_vt =
+static struct dev_uart_vt s_uart_vt =
 {
-    .send = _transmit,
-    .recv  = _receive,
-    .send_recv = _transfer,
+    .send = _send,
+    .recv = _recv,
+    .send_recv = _send_recv,
 };
 
 /*********************************************************************************************************
 *                                              Static Functions
 *********************************************************************************************************/
 /*********************************************************************************************************
-*   send data
+*   send uart data
 *
-*   @param   self     the spi dev
-*   @param   tx_buf   send buffer
-*   @param   len      send length
+*   @param   self      the uart dev
+*   @param   tx_buf    transmit buffer
+*   @param   len       transmit length
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static void _transmit(struct dev_spi_vt* self,uint8_t* tx_buf,uint16_t len)
+static void _send(struct dev_uart_vt* self,uint8_t* tx_buf,uint16_t len)
 {
-    struct dev_spi* this = (struct dev_spi*)self;
+    struct dev_uart* this = (struct dev_uart*)self;
 
-    HAL_SPI_Transmit(this->hspi,
-                     tx_buf,
+    if(this == NULL || this->huart == NULL)
+        return;
+
+    HAL_UART_Transmit(this->huart,
+                      tx_buf,
+                      len,
+                      HAL_MAX_DELAY);
+}
+
+/*********************************************************************************************************
+*   receive uart data
+*
+*   @param   self      the uart dev
+*   @param   rx_buf    receive buffer
+*   @param   len       receive length
+*   @return  void
+*   @note
+*********************************************************************************************************/
+static void _recv(struct dev_uart_vt* self,uint8_t* rx_buf,uint16_t len)
+{
+    struct dev_uart* this = (struct dev_uart*)self;
+
+    if(this == NULL || this->huart == NULL)
+        return;
+
+    HAL_UART_Receive(this->huart,
+                     rx_buf,
                      len,
                      HAL_MAX_DELAY);
 }
 
 /*********************************************************************************************************
-*   recv data
+*   send then receive uart data
 *
-*   @param   self     the spi dev
-*   @param   rx_buf   recv buffer
-*   @param   len      recv length
+*   @param   self      the uart dev
+*   @param   tx_buf    transmit buffer
+*   @param   tx_len    transmit length
+*   @param   rx_buf    receive buffer
+*   @param   rx_len    receive length
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static void _receive(struct dev_spi_vt* self,uint8_t* rx_buf,uint16_t len)
+static void _send_recv(struct dev_uart_vt* self,
+                       uint8_t* tx_buf,
+                       uint16_t tx_len,
+                       uint8_t* rx_buf,
+                       uint16_t rx_len)
 {
-    struct dev_spi* this = (struct dev_spi*)self;
-
-    HAL_SPI_Receive(this->hspi,
-                    rx_buf,
-                    len,
-                    HAL_MAX_DELAY);
-}
-
-/*********************************************************************************************************
-*   send_recv data
-*
-*   @param   self     the spi dev
-*   @param   tx_buf   send buffer
-*   @param   rx_buf   recv buffer
-*   @param   len      send_recv length
-*   @return  void
-*   @note
-*********************************************************************************************************/
-static void _transfer(struct dev_spi_vt* self,
-                      uint8_t* tx_buf,
-                      uint8_t* rx_buf,
-                      uint16_t len)
-{
-    struct dev_spi* this = (struct dev_spi*)self;
-
-    HAL_SPI_TransmitReceive(this->hspi,
-                            tx_buf,
-                            rx_buf,
-                            len,
-                            HAL_MAX_DELAY);
+    _send(self,tx_buf,tx_len);
+    _recv(self,rx_buf,rx_len);
 }
 
 /*********************************************************************************************************
 *                                              API
 *********************************************************************************************************/
 /*********************************************************************************************************
-*   init the spi dev with the conf
+*   init the uart dev with the conf
 *
-*   @param   conf     spi config
+*   @param   conf      uart config
 *   @return  void
 *   @note
 *********************************************************************************************************/
-void SPI_DevRegister(void* conf)
+void UART_DevRegister(void* conf)
 {
     static uint8_t s_cnt=0;
 
-    BSP_Assert(s_cnt < SPI_NUM,"Fail to register the SPI dev");
+    Assert(s_cnt < UART_NUM,"can't get UART Dev");
 
 
-    struct dev_spi* obj = &s_dev_spi_list[s_cnt++];
+    dev_uart_conf* uart_conf=(dev_uart_conf*)conf;
 
-    dev_spi_conf* spi_conf = (dev_spi_conf*)conf;
+    struct dev_uart* obj=&s_dev_uart_list[s_cnt++];
 
-    obj->vt   = &s_spi_vt;
-    obj->hspi = spi_conf->hspi;
+    obj->vt=&s_uart_vt;
+    obj->huart=uart_conf->huart;
 }
 
 /*********************************************************************************************************
-*   get the spi dev
+*   get the uart dev
 *
-*   @param   obj      spi object
-*   @param   ind      index
+*   @param   obj       uart object
+*   @param   ind       device index
 *   @return  void
 *   @note
 *********************************************************************************************************/
-void SPI_DevGet(struct dev_spi_vt** obj,uint8_t ind)
+void UART_DevGet(struct dev_uart_vt** obj,uint8_t ind)
 {
-    BSP_Assert(ind < SPI_NUM,"Fail to get the SPI dev");
+    Assert(ind < UART_NUM,"can't get UART Dev");
 
-    *obj = (struct dev_spi_vt*)&s_dev_spi_list[ind];
+    *obj=(struct dev_uart_vt*)&s_dev_uart_list[ind];
 }

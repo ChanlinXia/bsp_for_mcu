@@ -5,6 +5,9 @@ project(bsp C)
 add_library(bsp STATIC
     src/bsp_gpio.c
     src/bsp_spi.c
+    src/bsp_uart.c
+    src/bsp_pwm.c
+    src/bsp_adc.c
 )
 
 target_include_directories(bsp

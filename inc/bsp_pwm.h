@@ -1,81 +1,54 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file    tim.h
-  * @brief   This file contains all the function prototypes for
-  *          the tim.c file
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __TIM_H__
-#define __TIM_H__
+/*********************************************************************************************************
+*
+*   @author   Created by Chanlin on 2026/6/3.
+*   @version  1.0
+*   @update
+*********************************************************************************************************/
+#ifndef __BSP_PWM_H__
+#define __BSP_PWM_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
-#include "main.h"
+/*********************************************************************************************************
+*                                               Header File
+*********************************************************************************************************/
+#include "bsp_conf.h"
 
-/* USER CODE BEGIN Includes */
+/*********************************************************************************************************
+*                                               Public Macro
+*********************************************************************************************************/
 
-/* USER CODE END Includes */
 
-extern TIM_HandleTypeDef htim2;
+/*********************************************************************************************************
+*                                               Public Declaration
+*********************************************************************************************************/
+struct dev_pwm_vt
+{
+    void (*start)(struct dev_pwm_vt* self);
+    void (*stop)(struct dev_pwm_vt* self);
 
-extern TIM_HandleTypeDef htim3;
+    void (*set_duty)(struct dev_pwm_vt* self,float duty);
+    float (*get_duty)(struct dev_pwm_vt* self);
 
-extern TIM_HandleTypeDef htim8;
-
-extern TIM_HandleTypeDef htim9;
-
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
-
-void MX_TIM2_Init(void);
-void MX_TIM3_Init(void);
-void MX_TIM8_Init(void);
-void MX_TIM9_Init(void);
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-
-/* USER CODE BEGIN Prototypes */
-struct dev_gpio_vt;
-
-struct dev_gpio_vt
-{ // 输入建议用中断
-  void (*set_up)(struct dev_gpio_vt* self);
-  void (*set_down)(struct dev_gpio_vt* self);
-  void (*toggle)(struct dev_gpio_vt* self);
-  uint8_t (*read)(struct dev_gpio_vt* self);
+    void (*set_freq)(struct dev_pwm_vt* self,uint32_t hz);
 };
 
 typedef struct
-{ // 输入建议用中断
-  GPIO_TypeDef* port;
-  uint32_t pin;
-}dev_gpio_conf;
+{
+    TIM_HandleTypeDef* htim;
+    uint32_t channel;
+}dev_pwm_conf;
 
-
-void GPIO_DevRegister(void* conf);
-void GPIO_DevGet(struct dev_gpio_vt** obj,uint8_t ind);
-/* USER CODE END Prototypes */
+/*********************************************************************************************************
+*                                               API
+*********************************************************************************************************/
+void PWM_DevRegister(void* conf);
+void PWM_DevGet(struct dev_pwm_vt** obj,uint8_t ind);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __TIM_H__ */
-
+#endif /* __BSP_PWM_H__ */

@@ -1,40 +1,52 @@
-#ifndef __ADC_H__
-#define __ADC_H__
+/*********************************************************************************************************
+*
+*   @author   Created by Chanlin on 2026/6/3.
+*   @version  1.0
+*   @update
+*********************************************************************************************************/
+#ifndef __BSP_ADC_H__
+#define __BSP_ADC_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "main.h"
+/*********************************************************************************************************
+*                                               Header File
+*********************************************************************************************************/
 #include "bsp_conf.h"
 
+/*********************************************************************************************************
+*                                               Public Macro
+*********************************************************************************************************/
 typedef uint16_t ad_val;
 
-#define ADC1ChannelNum 1
-#define ADC2ChannelNum 1
+#define ADC1_USED_CHANNEL_NUM 1 
+#define ADC2_USED_CHANNEL_NUM 1
 
-
-struct dev_adc_vt;
-
+/*********************************************************************************************************
+*                                               Public Declaration
+*********************************************************************************************************/
 struct dev_adc_vt
 {
-  void (*start)(struct dev_adc_vt* self);
-  void (*stop)(struct dev_adc_vt* self);
-  uint16_t (*getValue)(struct dev_adc_vt* self,int channel);
+    void    (*start)(struct dev_adc_vt* self);
+    void    (*stop)(struct dev_adc_vt* self);
+    ad_val  (*get_value)(struct dev_adc_vt* self,uint8_t channel);
 };
 
 typedef struct
-{ 
-  ADC_HandleTypeDef* hadc;
+{
+    ADC_HandleTypeDef* hadc;
 }dev_adc_conf;
 
+/*********************************************************************************************************
+*                                               API
+*********************************************************************************************************/
 void ADC_DevRegister(void* conf);
 void ADC_DevGet(struct dev_adc_vt** obj,uint8_t ind);
-
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __ADC_H__ */
-
+#endif /* __BSP_ADC_H__ */

@@ -1,34 +1,32 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file    gpio.c
-  * @brief   This file provides code for the configuration
-  *          of all used GPIO pins.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-
-/* Includes ------------------------------------------------------------------*/
+/*********************************************************************************************************
+*
+*   @author   Created by Chanlin on 2026/6/3.
+*   @version  1.0
+*   @update   
+*********************************************************************************************************/
+/*********************************************************************************************************
+*                                              Header
+*********************************************************************************************************/
 #include "gpio.h"
 
-/* USER CODE BEGIN 0 */
-#include <stdio.h>
-/* USER CODE END 0 */
+/*********************************************************************************************************
+*                                              Private Macro
+*********************************************************************************************************/
+#ifdef DEV_GPIO_NUM
 
-/*----------------------------------------------------------------------------*/
-/* Configure GPIO                                                             */
-/*----------------------------------------------------------------------------*/
-/* USER CODE BEGIN 1 */
+#ifdef  DEV_LED_NUM
+#define GPIO_NUM  DEV_GPIO_NUM + DEV_LED_NUM
+#else
+#define GPIO_NUM  DEV_GPIO_NUM
+#endif
+
+# else
+#define GPIO_NUM  1
+#endif
+
+/*********************************************************************************************************
+*                                              Private Declaration
+*********************************************************************************************************/
 struct dev_gpio
 {
     struct dev_gpio_vt* vt;
@@ -37,28 +35,17 @@ struct dev_gpio
     GPIO_TypeDef* port;
 };
 
-#ifdef DEV_GPIO_NUM
-#ifdef  DEV_LED_NUM
-#define GPIO_NUM  DEV_GPIO_NUM + DEV_LED_NUM
-
-#else
-#define GPIO_NUM  DEV_GPIO_NUM
-
-#endif
-
-# else
-#define GPIO_NUM  1
-#endif
-
-static struct dev_gpio s_dev_gpio_list[GPIO_NUM]={};
-
+/*********************************************************************************************************
+*                                              Static Declaration
+*********************************************************************************************************/
 // static function dec
 static void _set_up(struct dev_gpio_vt* self);
 static void _set_down(struct dev_gpio_vt* self);
 static uint8_t _read(struct dev_gpio_vt* self);
 static void _toggle(struct dev_gpio_vt* self);
 
-// 静态虚函数
+// static virtual function list
+static struct dev_gpio s_dev_gpio_list[GPIO_NUM]={};
 static struct dev_gpio_vt s_gpio_vt ={
     .set_up = _set_up,
     .set_down = _set_down,
@@ -66,17 +53,40 @@ static struct dev_gpio_vt s_gpio_vt ={
     .toggle = _toggle,
 };
 
-// static function realization
+/*********************************************************************************************************
+*                                              Static Functions
+*********************************************************************************************************/
+/*********************************************************************************************************
+*   pull up the pin
+*
+*   @param   self  the gpio dev
+*   @return  void
+*   @note   
+*********************************************************************************************************/
 static void _set_up(struct dev_gpio_vt* self) {
     struct dev_gpio* this = (struct dev_gpio*) self;
     HAL_GPIO_WritePin(this->port,this->pin, GPIO_PIN_SET);
 }
 
+/*********************************************************************************************************
+*   pull down the pin
+*
+*   @param   self  the gpio dev
+*   @return  void
+*   @note   
+*********************************************************************************************************/
 static void _set_down(struct dev_gpio_vt* self) {
     struct dev_gpio* this = (struct dev_gpio*) self;
     HAL_GPIO_WritePin(this->port,this->pin, GPIO_PIN_RESET);
 }
 
+/*********************************************************************************************************
+*   read the pin
+*
+*   @param   self  the gpio dev
+*   @return  void
+*   @note   
+*********************************************************************************************************/
 static uint8_t _read(struct dev_gpio_vt* self) {
     struct dev_gpio* this = (struct dev_gpio*) self;
     GPIO_PinState status=HAL_GPIO_ReadPin(this->port,this->pin);
@@ -84,76 +94,33 @@ static uint8_t _read(struct dev_gpio_vt* self) {
     else return 0;
 }
 
+/*********************************************************************************************************
+*   pull up the pin
+*
+*   @param   self  the gpio dev
+*   @return  void
+*   @note   
+*********************************************************************************************************/
 static void _toggle(struct dev_gpio_vt* self) {
     struct dev_gpio* this = (struct dev_gpio*) self;
     HAL_GPIO_TogglePin(this->port,this->pin);
 }
-/* USER CODE END 1 */
 
-/** Configure pins as
-        * Analog
-        * Input
-        * Output
-        * EVENT_OUT
-        * EXTI
-*/
-void MX_GPIO_Init(void)
-{
-
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PC9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA8 PA9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-}
-
-/* USER CODE BEGIN 2 */
+/*********************************************************************************************************
+*                                              API
+*********************************************************************************************************/
+/*********************************************************************************************************
+*   init the gpio dev with the conf
+*
+*   @param   self  the gpio dev
+*   @return  void
+*   @note   
+*********************************************************************************************************/
 void GPIO_DevRegister(void* conf) {
     static uint8_t s_cnt=0;
 
-    if (s_cnt >=GPIO_NUM) {
-        printf("[GPIO] the index of the register item is out of range");
-        return;
-    }
+    BSP_Assert(s_cnt < GPIO_NUM,"Fail to get the GPIO dev");
+
 
     struct dev_gpio* obj = &s_dev_gpio_list[s_cnt++];
     dev_gpio_conf* gpio_conf = (dev_gpio_conf*)conf;
@@ -163,10 +130,16 @@ void GPIO_DevRegister(void* conf) {
     obj->port = gpio_conf->port;
 }
 
+/*********************************************************************************************************
+*   get the gpio dev
+*
+*   @param   self  the gpio dev
+*   @return  void
+*   @note   
+*********************************************************************************************************/
 void GPIO_DevGet(struct dev_gpio_vt** obj,uint8_t ind) {
-    Assert(ind < GPIO_NUM);
+    BSP_Assert(ind < GPIO_NUM,"Fail to get the GPIO dev");
 
     *obj = (struct dev_gpio_vt*)&s_dev_gpio_list[ind]; // 赋值
 }
 
-/* USER CODE END 2 */

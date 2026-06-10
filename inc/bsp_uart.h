@@ -4,8 +4,8 @@
 *   @version  1.0
 *   @update
 *********************************************************************************************************/
-#ifndef __BSP_SPI_H__
-#define __BSP_SPI_H__
+#ifndef __BSP_UART_H__
+#define __BSP_UART_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,26 +24,31 @@ extern "C" {
 /*********************************************************************************************************
 *                                               Public Declaration
 *********************************************************************************************************/
-struct dev_spi_vt
+struct dev_uart_vt
 {
-  void    (*send)(struct dev_spi_vt* self,uint8_t* tx_buf,uint16_t len);
-  void    (*recv)(struct dev_spi_vt* self,uint8_t* rx_buf,uint16_t len);
-  void    (*send_recv)(struct dev_spi_vt* self,uint8_t* tx_buf,uint8_t* rx_buf,uint16_t len);
+    void (*send)(struct dev_uart_vt* self,uint8_t* tx_buf,uint16_t len);
+    void (*recv)(struct dev_uart_vt* self,uint8_t* rx_buf,uint16_t len);
+
+    void (*send_recv)(struct dev_uart_vt* self,
+                      uint8_t* tx_buf,
+                      uint16_t tx_len,
+                      uint8_t* rx_buf,
+                      uint16_t rx_len);
 };
 
 typedef struct
 {
-  SPI_HandleTypeDef* hspi;
-}dev_spi_conf;
+    UART_HandleTypeDef* huart;
+}dev_uart_conf;
 
 /*********************************************************************************************************
 *                                               API
 *********************************************************************************************************/
-void SPI_DevRegister(void* conf);
-void SPI_DevGet(struct dev_spi_vt** obj,uint8_t ind);
+void UART_DevRegister(void* conf);
+void UART_DevGet(struct dev_uart_vt** obj,uint8_t ind);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __BSP_SPI_H__ */
+#endif /* __BSP_UART_H__ */
