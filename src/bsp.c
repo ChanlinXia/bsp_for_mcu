@@ -49,9 +49,11 @@ static void _BSP_Register(ENUM_DEVICE_ID dev_type,void* config) {
     }
 }
 
-static void _BSP_GetById(ENUM_DEVICE_ID dev_type,void* config) {
+static void* _BSP_GetById(ENUM_DEVICE_ID dev_type,uint8_t ind) {
+    void* p_dev = 0;
     switch (dev_type) { // use register fun for different device here
         case ENUM_DEVICE_GPIO_START:
+            GPIO_DevGet((struct dev_gpio**)&p_dev,ind);
             // GPIO_DevGet()
             break;
             // case ENUM_DEVICE_LED_START:
@@ -66,6 +68,9 @@ static void _BSP_GetById(ENUM_DEVICE_ID dev_type,void* config) {
         default:
             break;
     }
+
+    if (p_dev == 0) return NULL;
+    else  return p_dev;
 }
 
 static void _BSP_Debug(const char* debug_info) {
@@ -100,7 +105,7 @@ ENUM_DEVICE_GPIO_HB4_EN,
     ENUM_DEVICE_LED_HEART,
 
 */
-    void* register_list[ENUM_DEVICE_MAX]={
+    void* register_list[]={
         // gpio
         &(dev_gpio_conf){GPIOB,GPIO_PIN_14},
         &(dev_gpio_conf){GPIOA,GPIO_PIN_1},
@@ -115,51 +120,64 @@ ENUM_DEVICE_GPIO_HB4_EN,
         &(dev_gpio_conf){GPIOA,GPIO_PIN_9},
         &(dev_gpio_conf){GPIOA,GPIO_PIN_9},
         &(dev_gpio_conf){GPIOB,GPIO_PIN_15},
-        &(dev_gpio_conf){GPIOD,GPIO_PIN_2},
+        // &(dev_gpio_conf){GPIOD,GPIO_PIN_2},
+
+
+        &(dev_gpio_conf){GPIOF,GPIO_PIN_9},
+        &(dev_gpio_conf){GPIOF,GPIO_PIN_10},
+
 
         // 
 
     };
 
     int i =0,j=0;
-    ENUM_DEVICE_ID dev_type = ENUM_DEVICE_GPIO_START;
-    for (i=0;i<ENUM_DEVICE_MAX;++i) {
+    ENUM_DEVICE_ID dev_type = 0;
+
+    do {
         if (i == s_dev_satrt_list[j]) {
             dev_type = s_dev_satrt_list[j];
             ++j;
             continue;
         }
         _BSP_Register(dev_type,register_list[i]);
-    }
+        i++;
+    }while (i < ENUM_DEVICE_MAX-sizeof(s_dev_satrt_list)+1);
+
+
+
+    delay_init(168);
 }
 
 /*********************************************************************************************************
 *   get the virtual function of the device with the id
 *
 *   @param   id     the id of the device
-*   @param   p_dev  the pointer of the device required
 *   @return  void
 *   @note id must be contained in the enum declaration in bsp_conf.h; p_dev will be the pointer of static device variable
 *********************************************************************************************************/
-void BSP_GetDevice(ENUM_DEVICE_ID id,bsp_device_t** p_dev) {
+void* BSP_GetDevice(ENUM_DEVICE_ID id) {
     int i=0;
     ENUM_DEVICE_ID dev_type = s_dev_satrt_list[i];
 
     while (1) {
-        if (dev_type == ENUM_DEVICE_MAX) {
-            _BSP_Debug("the id is valid");
-            return;
-        }
-
         if (id > dev_type) {
             i++;
         }
         else break;
+
+        if (dev_type >= ENUM_DEVICE_MAX) {
+            _BSP_Debug("the id is valid");
+            return NULL;
+        }
+
         dev_type = s_dev_satrt_list[i];
     }
 
     dev_type = s_dev_satrt_list[i-1]; // 类型
-    _BSP_GetById(dev_type,&p_dev);
+    uint8_t ind = id-dev_type-1;
+    printf("the device ind of devs:%d\r\n",id-dev_type-1);
+    return _BSP_GetById(dev_type,id-dev_type-1);
 }
 
 

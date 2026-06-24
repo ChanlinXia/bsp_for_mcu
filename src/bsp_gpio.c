@@ -8,6 +8,7 @@
 *                                              Header
 *********************************************************************************************************/
 #include "bsp_gpio.h"
+#include <stdio.h>
 
 /*********************************************************************************************************
 *                                              Private Macro
@@ -27,9 +28,9 @@
 /*********************************************************************************************************
 *                                              Private Declaration
 *********************************************************************************************************/
-struct dev_gpio
+struct dev_gpio_impl
 {
-    struct dev_gpio_vt* vt;
+    struct dev_gpio dev;
 
     uint32_t pin;
     GPIO_TypeDef* port;
@@ -39,13 +40,13 @@ struct dev_gpio
 *                                              Static Declaration
 *********************************************************************************************************/
 // static function dec
-static void _set_up(struct dev_gpio_vt* self);
-static void _set_down(struct dev_gpio_vt* self);
-static uint8_t _read(struct dev_gpio_vt* self);
-static void _toggle(struct dev_gpio_vt* self);
+static void _set_up(struct dev_gpio* self);
+static void _set_down(struct dev_gpio* self);
+static uint8_t _read(struct dev_gpio* self);
+static void _toggle(struct dev_gpio* self);
 
 // static virtual function list
-static struct dev_gpio s_dev_gpio_list[GPIO_NUM]={};
+static struct dev_gpio_impl s_dev_gpio_list[GPIO_NUM]={};
 static struct dev_gpio_vt s_gpio_vt ={
     .set_up = _set_up,
     .set_down = _set_down,
@@ -63,8 +64,12 @@ static struct dev_gpio_vt s_gpio_vt ={
 *   @return  void
 *   @note   
 *********************************************************************************************************/
-static void _set_up(struct dev_gpio_vt* self) {
-    struct dev_gpio* this = (struct dev_gpio*) self;
+static void _set_up(struct dev_gpio* self) {
+    // printf("port:%d,pin:%d\r\n",this->port,this->pin);
+
+    printf("set up the gpio\r\n");
+    struct dev_gpio_impl* this = (struct dev_gpio_impl*) self;
+    printf("port:%d,pin:%d\r\n",this->port,this->pin);
     HAL_GPIO_WritePin(this->port,this->pin, GPIO_PIN_SET);
 }
 
@@ -75,8 +80,8 @@ static void _set_up(struct dev_gpio_vt* self) {
 *   @return  void
 *   @note   
 *********************************************************************************************************/
-static void _set_down(struct dev_gpio_vt* self) {
-    struct dev_gpio* this = (struct dev_gpio*) self;
+static void _set_down(struct dev_gpio* self) {
+    struct dev_gpio_impl* this = (struct dev_gpio_impl*) self;
     HAL_GPIO_WritePin(this->port,this->pin, GPIO_PIN_RESET);
 }
 
@@ -87,8 +92,8 @@ static void _set_down(struct dev_gpio_vt* self) {
 *   @return  void
 *   @note   
 *********************************************************************************************************/
-static uint8_t _read(struct dev_gpio_vt* self) {
-    struct dev_gpio* this = (struct dev_gpio*) self;
+static uint8_t _read(struct dev_gpio* self) {
+    struct dev_gpio_impl* this = (struct dev_gpio_impl*) self;
     GPIO_PinState status=HAL_GPIO_ReadPin(this->port,this->pin);
     if (status == GPIO_PIN_SET) return 1;
     else return 0;
@@ -101,8 +106,8 @@ static uint8_t _read(struct dev_gpio_vt* self) {
 *   @return  void
 *   @note   
 *********************************************************************************************************/
-static void _toggle(struct dev_gpio_vt* self) {
-    struct dev_gpio* this = (struct dev_gpio*) self;
+static void _toggle(struct dev_gpio* self) {
+    struct dev_gpio_impl* this = (struct dev_gpio_impl*) self;
     HAL_GPIO_TogglePin(this->port,this->pin);
 }
 
@@ -119,13 +124,14 @@ static void _toggle(struct dev_gpio_vt* self) {
 void GPIO_DevRegister(void* conf) {
     static uint8_t s_cnt=0;
 
-    BSP_Assert(s_cnt < GPIO_NUM,"Fail to get the GPIO dev");
+    // printf("The GPIO_NUM is %d,s_cnt is %d\r\n",GPIO_NUM,s_cnt);
+    BSP_Assert(s_cnt < GPIO_NUM,"Fail to register the GPIO dev");
 
 
-    struct dev_gpio* obj = &s_dev_gpio_list[s_cnt++];
+    struct dev_gpio_impl* obj = &s_dev_gpio_list[s_cnt++];
     dev_gpio_conf* gpio_conf = (dev_gpio_conf*)conf;
 
-    obj->vt = &s_gpio_vt;
+    obj->dev.vt = &s_gpio_vt;
     obj->pin = gpio_conf->pin;
     obj->port = gpio_conf->port;
 }
@@ -133,13 +139,14 @@ void GPIO_DevRegister(void* conf) {
 /*********************************************************************************************************
 *   get the gpio dev
 *
-*   @param   self  the gpio dev
+*   @param   obj  the gpio dev
 *   @return  void
 *   @note   
 *********************************************************************************************************/
-void GPIO_DevGet(struct dev_gpio_vt** obj,uint8_t ind) {
+void GPIO_DevGet(struct dev_gpio** obj,uint8_t ind) {
     BSP_Assert(ind < GPIO_NUM,"Fail to get the GPIO dev");
 
-    *obj = (struct dev_gpio_vt*)&s_dev_gpio_list[ind]; // 赋值
+    *obj = (struct dev_gpio*)(&s_dev_gpio_list[ind]); // 赋值
+
 }
 

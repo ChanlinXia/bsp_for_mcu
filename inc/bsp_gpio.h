@@ -23,12 +23,19 @@ extern "C" {
 /*********************************************************************************************************
 *                                               Public Declaration
 *********************************************************************************************************/
+struct dev_gpio;
 struct dev_gpio_vt
 { 
-  void (*set_up)(struct dev_gpio_vt* self);
-  void (*set_down)(struct dev_gpio_vt* self);
-  void (*toggle)(struct dev_gpio_vt* self);
-  uint8_t (*read)(struct dev_gpio_vt* self);
+  void (*set_up)(struct dev_gpio* self);
+  void (*set_down)(struct dev_gpio* self);
+  void (*toggle)(struct dev_gpio* self);
+  uint8_t (*read)(struct dev_gpio* self);
+};
+
+struct dev_gpio {
+  // public 变量待补充
+
+  struct dev_gpio_vt* vt;
 };
 
 typedef struct
@@ -41,7 +48,7 @@ typedef struct
 *                                               API
 *********************************************************************************************************/
 void GPIO_DevRegister(void* conf);
-void GPIO_DevGet(struct dev_gpio_vt** obj,uint8_t ind);
+void GPIO_DevGet(struct dev_gpio** obj,uint8_t ind);
 
 
 #ifdef __cplusplus

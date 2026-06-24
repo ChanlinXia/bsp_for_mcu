@@ -21,29 +21,36 @@ extern "C" {
 *********************************************************************************************************/
 typedef uint16_t ad_val;
 
-#define ADC1_USED_CHANNEL_NUM 1 
-#define ADC2_USED_CHANNEL_NUM 1
+#define ADC1_USED_CHANNEL_NUM  1
+#define ADC2_USED_CHANNEL_NUM  1
 
 /*********************************************************************************************************
 *                                               Public Declaration
 *********************************************************************************************************/
+struct dev_adc;
+
 struct dev_adc_vt
 {
-    void    (*start)(struct dev_adc_vt* self);
-    void    (*stop)(struct dev_adc_vt* self);
-    ad_val  (*get_value)(struct dev_adc_vt* self,uint8_t channel);
+    void    (*start)(struct dev_adc* self);
+    void    (*stop)(struct dev_adc* self);
+    ad_val  (*get_value)(struct dev_adc* self, uint8_t channel);
+};
+
+struct dev_adc
+{
+    struct dev_adc_vt* vt;
 };
 
 typedef struct
 {
     ADC_HandleTypeDef* hadc;
-}dev_adc_conf;
+} dev_adc_conf;
 
 /*********************************************************************************************************
 *                                               API
 *********************************************************************************************************/
 void ADC_DevRegister(void* conf);
-void ADC_DevGet(struct dev_adc_vt** obj,uint8_t ind);
+void ADC_DevGet(struct dev_adc** obj, uint8_t ind);
 
 #ifdef __cplusplus
 }

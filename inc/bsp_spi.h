@@ -20,27 +20,33 @@ extern "C" {
 *                                               Public Macro
 *********************************************************************************************************/
 
-
 /*********************************************************************************************************
 *                                               Public Declaration
 *********************************************************************************************************/
+struct dev_spi;
+
 struct dev_spi_vt
 {
-  void    (*send)(struct dev_spi_vt* self,uint8_t* tx_buf,uint16_t len);
-  void    (*recv)(struct dev_spi_vt* self,uint8_t* rx_buf,uint16_t len);
-  void    (*send_recv)(struct dev_spi_vt* self,uint8_t* tx_buf,uint8_t* rx_buf,uint16_t len);
+    void (*transmit)(struct dev_spi* self, uint8_t* tx_buf, uint16_t len);
+    void (*receive)(struct dev_spi* self, uint8_t* rx_buf, uint16_t len);
+    void (*transfer)(struct dev_spi* self, uint8_t* tx_buf, uint8_t* rx_buf, uint16_t len);
+};
+
+struct dev_spi
+{
+    struct dev_spi_vt* vt;
 };
 
 typedef struct
 {
-  SPI_HandleTypeDef* hspi;
-}dev_spi_conf;
+    SPI_HandleTypeDef* hspi;
+} dev_spi_conf;
 
 /*********************************************************************************************************
 *                                               API
 *********************************************************************************************************/
 void SPI_DevRegister(void* conf);
-void SPI_DevGet(struct dev_spi_vt** obj,uint8_t ind);
+void SPI_DevGet(struct dev_spi** obj, uint8_t ind);
 
 #ifdef __cplusplus
 }

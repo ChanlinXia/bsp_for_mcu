@@ -3,11 +3,13 @@ cmake_minimum_required(VERSION 3.20)
 project(bsp C)
 
 add_library(bsp STATIC
+    src/bsp.c
     src/bsp_gpio.c
     src/bsp_spi.c
     src/bsp_uart.c
     src/bsp_pwm.c
     src/bsp_adc.c
+    src/bsp_delay.c
 )
 
 target_include_directories(bsp

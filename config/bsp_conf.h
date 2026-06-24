@@ -19,15 +19,15 @@
 /*********************************************************************************************************
 *                                              Macro
 *********************************************************************************************************/
-#define BSP_Assert(x,info) do{ if(!x){ printf("BSP_Assert at [%s:%d]: %s\n", __FILE__, __LINE__,info); while(1){}}}while(0)
+#define BSP_Assert(x,info) do{ if(!(x)){ printf("BSP_Assert at [%s:%d]: %s\n", __FILE__, __LINE__,info); while(1){}}}while(0)
 
 
 #define DEV_GPIO_NUM 6
-#define DEV_LED_NUM 5
-#define DEV_SPI_NUM 2
-#define DEV_ADC_NUM 1
+#define DEV_LED_NUM 7
+// #define DEV_SPI_NUM 2
+// #define DEV_ADC_NUM 1
 // #define DEV_UART_NUM 1
-#define DEV_PWM_NUM 8
+// #define DEV_PWM_NUM 8
 
 /*********************************************************************************************************
 *                                              Enum
@@ -48,12 +48,15 @@ typedef enum {
 
     // LED
 #ifdef DEV_LED_NUM
-    ENUM_DEVICE_LED_START,
+    // ENUM_DEVICE_LED_START,
     ENUM_DEVICE_LED_POVER_G,
     ENUM_DEVICE_LED_POVER_R,
     ENUM_DEVICE_LED_STATUS,
     ENUM_DEVICE_LED_ERR,
     ENUM_DEVICE_LED_HEART,
+
+    ENUM_DEVICE_LED_TEST1,
+    ENUM_DEVICE_LED_TEST2,
 #endif
 
     // ADC

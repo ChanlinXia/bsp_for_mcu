@@ -5,20 +5,21 @@
 *   @update   
 *********************************************************************************************************/
 
-#ifndef _BSP_H
-#define _BSP_H
+#ifndef _BSP_H_
+#define _BSP_H_
 
 /*********************************************************************************************************
 *                                               Header File
 *********************************************************************************************************/
 // all device to be used in the mcu
-#include "adc.h"
-#include "gpio.h"
-#include "spi.h"
-#include "tim.h"
-#include "usart.h"
+#include "bsp_adc.h"
+#include "bsp_gpio.h"
+#include "bsp_spi.h"
+#include "bsp_pwm.h"
+#include "bsp_uart.h"
 
 #include "bsp_conf.h"
+#include "bsp_delay.h"
 
 /*********************************************************************************************************
 *                                              Macro
@@ -32,16 +33,16 @@
 /*********************************************************************************************************
 *                                              Structure
 *********************************************************************************************************/
-typedef struct {
-    void* dev_obj;
-    // 待扩展
-
-}bsp_device_t;
+// typedef struct {
+//     void* dev_obj;
+//     // 待扩展
+//
+// }bsp_device_t;
 
 /*********************************************************************************************************
 *                                              API List
 *********************************************************************************************************/
 void BSP_Init(void);
-void BSP_GetDevice(ENUM_DEVICE_ID id,bsp_device_t** p_dev);
+void* BSP_GetDevice(ENUM_DEVICE_ID id);
 
 #endif //FACIAL_STIMULATION_DEVICE_BSP_H

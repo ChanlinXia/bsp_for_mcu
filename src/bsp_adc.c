@@ -9,34 +9,46 @@
 *                                              Header
 *********************************************************************************************************/
 #include "bsp_adc.h"
+#include <stdio.h>
+
+/*********************************************************************************************************
+*                                              Private Macro
+*********************************************************************************************************/
+#ifdef DEV_ADC_NUM
+#define ADC_NUM  DEV_ADC_NUM
+#else
+#define ADC_NUM  1
+#endif
 
 /*********************************************************************************************************
 *                                              Private Declaration
 *********************************************************************************************************/
-struct dev_adc {
-  struct dev_adc_vt* vt;
-  ADC_HandleTypeDef* hadc;
-  ad_val* buffer;
+struct dev_adc_impl
+{
+    struct dev_adc dev;           // 公共接口（放在第一个）
+
+    ADC_HandleTypeDef* hadc;
+    ad_val* buffer;
 };
 
 /*********************************************************************************************************
 *                                              Static Declaration
 *********************************************************************************************************/
-static struct dev_adc s_adc_list[2]={};
-
-ad_val s_adc1_buffer[ADC1_USED_CHANNEL_NUM]={};
-ad_val s_adc2_buffer[ADC2_USED_CHANNEL_NUM]={};
-
-// static function declaration
-static void _adc_start(struct dev_adc_vt* self);
-static void _adc_stop(struct dev_adc_vt* self);
-static uint16_t _adc_getValue(struct dev_adc_vt* self,uint8_t channel);
+// static function dec
+static void _enable(struct dev_adc* self);
+static void _disable(struct dev_adc* self);
+static ad_val _get_value(struct dev_adc* self, uint8_t channel);
 
 // static virtual function list
-static struct dev_adc_vt s_adc_vt ={
-  .start = _adc_start,
-  .stop = _adc_stop,
-  .get_value = _adc_getValue,
+static struct dev_adc_impl s_dev_adc_list[ADC_NUM] = {};
+
+static ad_val s_adc1_buffer[ADC1_USED_CHANNEL_NUM] = {};
+static ad_val s_adc2_buffer[ADC2_USED_CHANNEL_NUM] = {};
+
+static struct dev_adc_vt s_adc_vt = {
+    .start     = _enable,
+    .stop      = _disable,
+    .get_value = _get_value,
 };
 
 /*********************************************************************************************************
@@ -45,100 +57,117 @@ static struct dev_adc_vt s_adc_vt ={
 /*********************************************************************************************************
 *   start adc dma convert
 *
-*   @param   self      the adc dev
+*   @param   self  the adc dev
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static void _adc_start(struct dev_adc_vt* self)
+static void _enable(struct dev_adc* self)
 {
-  struct dev_adc* this = (struct dev_adc*)self;
-  uint8_t channel_num=0;
-  if (this == NULL || this->hadc == NULL)
-    return;
-  if (this->hadc->Instance == ADC1) channel_num = ADC1_USED_CHANNEL_NUM;
-  else if (this->hadc->Instance == ADC2)channel_num = ADC2_USED_CHANNEL_NUM;
-  else return;
+    struct dev_adc_impl* this = (struct dev_adc_impl*)self;
+    uint8_t channel_num = 0;
+
+    if (this == NULL || this->hadc == NULL)
+        return;
+
+    if (this->hadc->Instance == ADC1)
+        channel_num = ADC1_USED_CHANNEL_NUM;
+    else if (this->hadc->Instance == ADC2)
+        channel_num = ADC2_USED_CHANNEL_NUM;
+    else
+        return;
+
     HAL_ADC_Start_DMA(this->hadc, (uint32_t*)this->buffer, channel_num);
 }
 
 /*********************************************************************************************************
 *   stop adc dma convert
 *
-*   @param   self      the adc dev
+*   @param   self  the adc dev
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static void _adc_stop(struct dev_adc_vt* self)
+static void _disable(struct dev_adc* self)
 {
-  struct dev_adc* adc = (struct dev_adc*)self;
+    struct dev_adc_impl* this = (struct dev_adc_impl*)self;
 
-  if (adc == NULL || adc->hadc == NULL)
-    return;
+    if (this == NULL || this->hadc == NULL)
+        return;
 
-  HAL_ADC_Stop_DMA(adc->hadc);
+    HAL_ADC_Stop_DMA(this->hadc);
 }
 
 /*********************************************************************************************************
 *   get adc value by channel
 *
-*   @param   self      the adc dev
-*   @param   channel   channel index
+*   @param   self     the adc dev
+*   @param   channel  channel index
 *   @return  adc value
 *   @note
 *********************************************************************************************************/
-static uint16_t _adc_getValue(struct dev_adc_vt* self, uint8_t channel)
+static ad_val _get_value(struct dev_adc* self, uint8_t channel)
 {
-  struct dev_adc* this = (struct dev_adc*)self;
+    struct dev_adc_impl* this = (struct dev_adc_impl*)self;
 
-  if (this == NULL || this->hadc == NULL || this->buffer == NULL)
-    return  123;
+    if (this == NULL || this->hadc == NULL || this->buffer == NULL)
+        return 123;
 
-  if (this->hadc->Instance == ADC1) {
-    if (channel < ADC1_USED_CHANNEL_NUM) return *(this->buffer + channel);
-    else 123;
-  }
-  else if (this->hadc->Instance == ADC2) {
-    if (channel < ADC2_USED_CHANNEL_NUM) return *(this->buffer + channel);
-    else 123;
-  }
-  else return 123;
+    if (this->hadc->Instance == ADC1) {
+        if (channel < ADC1_USED_CHANNEL_NUM)
+            return *(this->buffer + channel);
+        else
+            return 123;
+    }
+    else if (this->hadc->Instance == ADC2) {
+        if (channel < ADC2_USED_CHANNEL_NUM)
+            return *(this->buffer + channel);
+        else
+            return 123;
+    }
+    else
+        return 123;
 }
 
 /*********************************************************************************************************
 *                                              API
 *********************************************************************************************************/
 /*********************************************************************************************************
-*   init the adc dev with the conf
+*   register the adc device
 *
-*   @param   conf      adc config
+*   @param   conf  the adc config
 *   @return  void
 *   @note
 *********************************************************************************************************/
-void ADC_DevRegister(void* conf) {
-  dev_adc_conf* config=(dev_adc_conf*)conf;
-  static uint8_t s_cnt=0;
+void ADC_DevRegister(void* conf)
+{
+    static uint8_t s_cnt = 0;
 
-  BSP_Assert(s_cnt <DEV_ADC_NUM,"can't register the adc dev");
-  struct dev_adc* obj = &s_adc_list[s_cnt++];
+    BSP_Assert(s_cnt < ADC_NUM, "Fail to register the ADC dev");
 
-  obj->vt = &s_adc_vt;
-  obj->hadc = config->hadc;
-  if (obj->hadc->Instance == ADC1 ) obj->buffer = s_adc1_buffer;
-  else if (obj->hadc->Instance == ADC2 ) obj->buffer = s_adc2_buffer;
-  else return;
+    struct dev_adc_impl* obj = &s_dev_adc_list[s_cnt++];
+    dev_adc_conf* adc_conf = (dev_adc_conf*)conf;
+
+    obj->dev.vt   = &s_adc_vt;
+    obj->hadc     = adc_conf->hadc;
+
+    if (obj->hadc->Instance == ADC1)
+        obj->buffer = s_adc1_buffer;
+    else if (obj->hadc->Instance == ADC2)
+        obj->buffer = s_adc2_buffer;
+    else
+        return;
 }
 
 /*********************************************************************************************************
-*   get the adc dev
+*   get the adc device
 *
-*   @param   obj       adc object
-*   @param   ind       device index
+*   @param   obj   the adc device pointer (output)
+*   @param   ind   device index
 *   @return  void
 *   @note
 *********************************************************************************************************/
-void ADC_DevGet(struct dev_adc_vt** obj,uint8_t ind) {
-  BSP_Assert(ind <DEV_ADC_NUM,"can't ");
+void ADC_DevGet(struct dev_adc** obj, uint8_t ind)
+{
+    BSP_Assert(ind < ADC_NUM, "Fail to get the ADC dev");
 
-  *obj = (struct dev_adc_vt*) &s_adc_list[ind];
+    *obj = (struct dev_adc*)&s_dev_adc_list[ind];
 }
-

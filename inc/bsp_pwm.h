@@ -20,32 +20,38 @@ extern "C" {
 *                                               Public Macro
 *********************************************************************************************************/
 
-
 /*********************************************************************************************************
 *                                               Public Declaration
 *********************************************************************************************************/
+struct dev_pwm;
+
 struct dev_pwm_vt
 {
-    void (*start)(struct dev_pwm_vt* self);
-    void (*stop)(struct dev_pwm_vt* self);
+    void   (*start)(struct dev_pwm* self);
+    void   (*stop)(struct dev_pwm* self);
 
-    void (*set_duty)(struct dev_pwm_vt* self,float duty);
-    float (*get_duty)(struct dev_pwm_vt* self);
+    void   (*set_duty)(struct dev_pwm* self, float duty);
+    float  (*get_duty)(struct dev_pwm* self);
 
-    void (*set_freq)(struct dev_pwm_vt* self,uint32_t hz);
+    void   (*set_freq)(struct dev_pwm* self, uint32_t hz);
+};
+
+struct dev_pwm
+{
+    struct dev_pwm_vt* vt;
 };
 
 typedef struct
 {
     TIM_HandleTypeDef* htim;
-    uint32_t channel;
-}dev_pwm_conf;
+    uint32_t           channel;
+} dev_pwm_conf;
 
 /*********************************************************************************************************
 *                                               API
 *********************************************************************************************************/
 void PWM_DevRegister(void* conf);
-void PWM_DevGet(struct dev_pwm_vt** obj,uint8_t ind);
+void PWM_DevGet(struct dev_pwm** obj, uint8_t ind);
 
 #ifdef __cplusplus
 }
