@@ -121,7 +121,7 @@ ENUM_DEVICE_GPIO_HB4_EN,
         &(dev_gpio_conf){GPIOA,GPIO_PIN_9},
         &(dev_gpio_conf){GPIOB,GPIO_PIN_15},
         // &(dev_gpio_conf){GPIOD,GPIO_PIN_2},
-
+    
 
         &(dev_gpio_conf){GPIOF,GPIO_PIN_9},
         &(dev_gpio_conf){GPIOF,GPIO_PIN_10},
@@ -135,14 +135,16 @@ ENUM_DEVICE_GPIO_HB4_EN,
     ENUM_DEVICE_ID dev_type = 0;
 
     do {
+        // printf("i val :%d\r\n",i);
         if (i == s_dev_satrt_list[j]) {
             dev_type = s_dev_satrt_list[j];
+            ++i;
             ++j;
             continue;
         }
-        _BSP_Register(dev_type,register_list[i]);
+        _BSP_Register(dev_type,register_list[i-j]);
         i++;
-    }while (i < ENUM_DEVICE_MAX-sizeof(s_dev_satrt_list)+1);
+    }while (ENUM_DEVICE_MAX != dev_type);
 
 
 
