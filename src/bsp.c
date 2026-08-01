@@ -115,20 +115,20 @@ void BSP_Init(void) {
 
     void* register_list[]={
         // gpio
-        &(dev_gpio_conf){GPIOB,GPIO_PIN_14}, //ENUM_DEVICE_GPIO_EMS
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_1},  //ENUM_DEVICE_GPIO_PWR_SW
-        &(dev_gpio_conf){GPIOC,GPIO_PIN_8},  //ENUM_DEVICE_GPIO_HB1_EN
-        &(dev_gpio_conf){GPIOB,GPIO_PIN_1},  //ENUM_DEVICE_GPIO_HB2_EN
-        &(dev_gpio_conf){GPIOC,GPIO_PIN_4},  //ENUM_DEVICE_GPIO_HB3_EN
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_5},  //ENUM_DEVICE_GPIO_HB4_EN
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_5},  //ENUM_DEVICE_GPIO_DAC_CHIP_EN
+        &(dev_gpio_conf){GPIOB,GPIO_PIN_14}, 
+        &(dev_gpio_conf){GPIOA,GPIO_PIN_1},  
+        &(dev_gpio_conf){GPIOC,GPIO_PIN_8},  
+        &(dev_gpio_conf){GPIOB,GPIO_PIN_1},  
+        &(dev_gpio_conf){GPIOC,GPIO_PIN_4},  
+        &(dev_gpio_conf){GPIOA,GPIO_PIN_5},  
+        &(dev_gpio_conf){GPIOA,GPIO_PIN_5},  
 
         // led
-        &(dev_gpio_conf){GPIOC,GPIO_PIN_9,GPIO_PIN_RESET},  //ENUM_DEVICE_LED_POWER_G
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_8,GPIO_PIN_RESET},  //ENUM_DEVICE_LED_POWER_R
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_9,GPIO_PIN_RESET},  //ENUM_DEVICE_LED_STATUS
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_9,GPIO_PIN_RESET},  //ENUM_DEVICE_LED_ERR
-        &(dev_gpio_conf){GPIOB,GPIO_PIN_15,GPIO_PIN_RESET}, //ENUM_DEVICE_LED_HEART
+        &(dev_gpio_conf){GPIOC,GPIO_PIN_9,GPIO_PIN_RESET},  
+        &(dev_gpio_conf){GPIOA,GPIO_PIN_8,GPIO_PIN_RESET},  
+        &(dev_gpio_conf){GPIOA,GPIO_PIN_9,GPIO_PIN_RESET},  
+        &(dev_gpio_conf){GPIOA,GPIO_PIN_9,GPIO_PIN_RESET},  
+        &(dev_gpio_conf){GPIOB,GPIO_PIN_15,GPIO_PIN_RESET}, 
         // &(dev_gpio_conf){GPIOD,GPIO_PIN_2},
 
         // ADC
@@ -148,21 +148,17 @@ void BSP_Init(void) {
         // },
 
         // PWM
-        // ==================== 桥1 (TIM8) ====================
-        &(dev_pwm_basic_config){&htim8, TIM_CHANNEL_1, M_Hz(BSP_PCLK2*2)}, //  ENUM_DEVICE_PWM_BRIDGE_H_1  (PC6)
-        &(dev_pwm_basic_config){&htim8, TIM_CHANNEL_2,M_Hz (BSP_PCLK2*2)}, //  ENUM_DEVICE_PWM_BRIDGE_L_1  (PC7)
+        &(dev_pwm_basic_config){&htim8, TIM_CHANNEL_1, M_Hz(BSP_PCLK2*2)},
+        &(dev_pwm_basic_config){&htim8, TIM_CHANNEL_2,M_Hz (BSP_PCLK2*2)}, 
 
-        // ==================== 桥2 (TIM2) ====================
-        &(dev_pwm_basic_config){&htim2, TIM_CHANNEL_3,M_Hz (BSP_PCLK1*2)}, //  ENUM_DEVICE_PWM_BRIDGE_H_2  (PB10)
-        &(dev_pwm_basic_config){&htim2, TIM_CHANNEL_4,M_Hz (BSP_PCLK1*2)}, //  ENUM_DEVICE_PWM_BRIDGE_L_2  (PB11)
+        &(dev_pwm_basic_config){&htim2, TIM_CHANNEL_3,M_Hz (BSP_PCLK1*2)}, 
+        &(dev_pwm_basic_config){&htim2, TIM_CHANNEL_4,M_Hz (BSP_PCLK1*2)}, 
 
-        // ==================== 桥3 (TIM3) ====================
-        &(dev_pwm_basic_config){&htim3, TIM_CHANNEL_1,M_Hz (BSP_PCLK1*2)}, //  ENUM_DEVICE_PWM_BRIDGE_H_3  (PA6)
-        &(dev_pwm_basic_config){&htim3, TIM_CHANNEL_2,M_Hz (BSP_PCLK1*2)}, //  ENUM_DEVICE_PWM_BRIDGE_L_3  (PA7)
+        &(dev_pwm_basic_config){&htim3, TIM_CHANNEL_1,M_Hz (BSP_PCLK1*2)}, 
+        &(dev_pwm_basic_config){&htim3, TIM_CHANNEL_2,M_Hz (BSP_PCLK1*2)},
 
-        // ==================== 桥4 (TIM9) ====================
-        &(dev_pwm_basic_config){&htim9, TIM_CHANNEL_1,M_Hz (BSP_PCLK2*2)}, //  ENUM_DEVICE_PWM_BRIDGE_H_4  (PA2)
-        &(dev_pwm_basic_config){&htim9, TIM_CHANNEL_2, M_Hz(BSP_PCLK2*2)}, //  ENUM_DEVICE_PWM_BRIDGE_L_4  (PA3)
+        &(dev_pwm_basic_config){&htim9, TIM_CHANNEL_1,M_Hz (BSP_PCLK2*2)}, 
+        &(dev_pwm_basic_config){&htim9, TIM_CHANNEL_2, M_Hz(BSP_PCLK2*2)}, 
 
         // PWM_PAIR
         &(dev_pwm_pair_conf){ // pwm_pair 1 (for birdge)
@@ -205,7 +201,7 @@ void BSP_Init(void) {
     };
 
     int i =0,j=0;
-    ENUM_BSP_ID dev_type = 0;
+    ENUM_DEVICE_ID dev_type = 0;
 
     do {
         // printf("i val :%d\r\n",i);

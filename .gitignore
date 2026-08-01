@@ -1,7 +1,1 @@
 build
-
-!inc/
-!src/
-!config/
-
-!CMakeLists.txt
