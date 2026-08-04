@@ -14,7 +14,7 @@
 // all device to be used in the mcu
 
 // header gen by MX
-#include "adc.h"
+// #include "adc.h"
 #include "tim.h"
 
 #include "bsp_conf.h"

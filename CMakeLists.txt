@@ -9,14 +9,16 @@ add_library(bsp STATIC
     src/bsp_gpio.c
     src/bsp_spi.c
     src/bsp_uart.c
-    src/bsp_pwm.c
-    src/bsp_adc.c
+#    src/bsp_pwm.c
+#    src/bsp_adc.c
     src/bsp_delay.c
-    src/bsp_pwm_pair.c
+#    src/bsp_pwm_pair.c
+
+#    custom/
 
     # chip
-    chip/TPC1_S4_TR/TPC1_S4_TR.c
-    chip/CC2500RGPR/CC2500RGPR.c
+#    chip/TPC1_S4_TR/TPC1_S4_TR.c
+#    chip/CC2500RGPR/CC2500RGPR.c
 )
 
 target_include_directories(bsp
