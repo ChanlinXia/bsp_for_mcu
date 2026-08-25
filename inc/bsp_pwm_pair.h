@@ -1,4 +1,5 @@
 /*********************************************************************************************************
+*	the device is designed to generate complementary pwm [TODO] how to solve the dead time in the end of a period
 *
 *   @author   Created by Chanlin on 2026/7/28.
 *   @version  1.0
@@ -78,4 +79,4 @@ typedef struct
 void PWMPair_DevRegister(void* conf);
 void PWMPair_DevGet(struct dev_pwm_pair** obj, uint8_t ind);
 
-#endif //FACIAL_STIMULATION_DEVICE_BSP_PWM_PAIR_H
+#endif //BSP_PWM_PAIR_H

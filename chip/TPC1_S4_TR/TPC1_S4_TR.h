@@ -14,6 +14,7 @@
 *                                               Header File
 *********************************************************************************************************/
 #include "bsp_conf.h"
+#include <stdint.h>
 
 /*********************************************************************************************************
 *                                               Public Macro
@@ -37,9 +38,11 @@ struct tpc1s4tr_t;
 
 struct chip_tpc1s4tr_vt
 {
-	void (*write)(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,uint8_t* data);
-	void (*enable)(struct tpc1s4tr_t* self);
-	void (*disable)(struct tpc1s4tr_t* self);
+	void (*write)(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,uint16_t data);
+	void (*enable_cs)(struct tpc1s4tr_t* self);
+	void (*disable_cs)(struct tpc1s4tr_t* self);
+	
+	void (*set_output)(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,double out_put);
 };
 
 typedef struct tpc1s4tr_t {
@@ -49,7 +52,7 @@ typedef struct tpc1s4tr_t {
 typedef struct tpc1s4tr_config_t {
 	double ref;
 	struct dev_spi* ptr_dev_spi;
-	struct dev_gpio* n_en_pin;
+	struct dev_gpio* load_pin;
 	uint8_t chip_type;	// 1:116 0:112
 }chip_tpc1s4tr_config_t;
 

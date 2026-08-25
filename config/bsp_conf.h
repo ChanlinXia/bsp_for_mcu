@@ -37,13 +37,13 @@
 
 
 // device num
-#define DEV_GPIO_NUM 7
+#define DEV_GPIO_NUM 8
 #define DEV_LED_NUM 5
 #define DEV_SPI_NUM 2
 #define DEV_ADC_NUM 1
 // #define DEV_UART_NUM 1
 #define DEV_PWM_NUM 8
-#define DEV_PWM_PAIR_NUM 4
+// #define DEV_PWM_PAIR_NUM 4
 
 
 #define CHIP_TPC1_S4_NUM 1
@@ -60,6 +60,14 @@ typedef enum {
 #ifdef DEV_GPIO_NUM
 
     ENUM_DEVICE_GPIO_START =0,
+    ENUM_DEVICE_GPIO_EMS,
+    ENUM_DEVICE_GPIO_PWR_SW,
+    ENUM_DEVICE_GPIO_HB1_EN,
+    ENUM_DEVICE_GPIO_HB2_EN,
+    ENUM_DEVICE_GPIO_HB3_EN,
+    ENUM_DEVICE_GPIO_HB4_EN,
+	ENUM_DEVICE_GPIO_DAC_CHIP_CS,
+	ENUM_DEVICE_GPIO_DAC_CHIP_LOAD,
 #endif
 
 	/*
@@ -67,7 +75,14 @@ typedef enum {
 	 */
 #ifdef DEV_LED_NUM
     // ENUM_DEVICE_LED_START,
+    ENUM_DEVICE_LED_POWER_G,
+    ENUM_DEVICE_LED_POWER_R,
+    ENUM_DEVICE_LED_STATUS,
+    ENUM_DEVICE_LED_ERR,
+    ENUM_DEVICE_LED_HEART,
 
+    // ENUM_DEVICE_LED_TEST1,
+    // ENUM_DEVICE_LED_TEST2,
 #endif
 
 	/*
@@ -75,7 +90,7 @@ typedef enum {
 	 */
 #ifdef DEV_ADC_NUM
     ENUM_DEVICE_ADC_START,
-
+    ENUM_DEVICE_BATTERY_ADC,    // 电池ADC
 #endif
 
 	/*
@@ -83,6 +98,8 @@ typedef enum {
 	 */
 #ifdef DEV_SPI_NUM
     ENUM_DEVICE_SPI_START,
+    ENUM_DEVICE_SPI1_DAC_CHIP,
+    ENUM_DEVICE_SPI3_RF,
 #endif
 
 	/*
@@ -99,7 +116,14 @@ typedef enum {
      */
 #ifdef DEV_PWM_NUM
     ENUM_DEVICE_PWM_START,
-
+    ENUM_DEVICE_PWM_BRIDGE_H_1,
+	ENUM_DEVICE_PWM_BRIDGE_L_1,
+	ENUM_DEVICE_PWM_BRIDGE_H_2,
+	ENUM_DEVICE_PWM_BRIDGE_L_2,
+	ENUM_DEVICE_PWM_BRIDGE_H_3,
+	ENUM_DEVICE_PWM_BRIDGE_L_3,
+	ENUM_DEVICE_PWM_BRIDGE_H_4,
+	ENUM_DEVICE_PWM_BRIDGE_L_4,
 #endif
 
 	/*
@@ -107,7 +131,10 @@ typedef enum {
 	*/
 #if defined( DEV_PWM_PAIR_NUM )
 	ENUM_DEVICE_PWM_PAIR_START,
-
+	ENUM_DEVICE_PWM_PAIR_BRIDGE_1,
+	ENUM_DEVICE_PWM_PAIR_BRIDGE_2,
+	ENUM_DEVICE_PWM_PAIR_BRIDGE_3,
+	ENUM_DEVICE_PWM_PAIR_BRIDGE_4,
 
 #endif
 
@@ -116,7 +143,7 @@ typedef enum {
 	 *****************************/
 #ifdef CHIP_TPC1_S4_NUM
 	ENUM_CHIP_TPC1_S4_START,
-
+	ENUM_CHIP_TPC116S4_REF_VOL_DAC,
 #endif
 
 

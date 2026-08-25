@@ -159,7 +159,7 @@ static void led_on(struct dev_gpio* self) {
 *********************************************************************************************************/
 static void led_off(struct dev_gpio* self) {
     struct dev_gpio_impl* this = (struct dev_gpio_impl*) self;
-    HAL_GPIO_WritePin(this->port,this->pin, this->led_active_level);
+    HAL_GPIO_WritePin(this->port,this->pin, 1-this->led_active_level);
 }
 
 /*********************************************************************************************************

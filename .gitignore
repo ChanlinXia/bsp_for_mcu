@@ -1,1 +1,3 @@
 build
+src/bsp.c
+config/bsp_conf.h

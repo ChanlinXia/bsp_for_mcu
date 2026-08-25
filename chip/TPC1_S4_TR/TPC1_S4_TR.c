@@ -11,6 +11,7 @@
 
 #include "bsp_gpio.h"
 #include "bsp_spi.h"
+#include <stdint.h>
 
 /*********************************************************************************************************
 *                                              Private Macro
@@ -30,6 +31,7 @@ typedef enum {
 	CHIP_CHANNEL_B_DATA = 0b1010,
 	CHIP_CHANNEL_C_DATA = 0b1100,
 	CHIP_CHANNEL_D_DATA = 0b1110,
+	CHIP_CHANNEL_ALL_DOWN = 0b0001,
 }CHIP_CHANNEL_DATA;
 
 /*********************************************************************************************************
@@ -40,29 +42,32 @@ typedef struct chip_tpc1s4tr_impl
 	struct tpc1s4tr_t chip;
 	double ref;
 	struct dev_spi* ptr_dev_spi;
-	struct dev_gpio* n_en_pin;
+	struct dev_gpio* load_pin;
 	uint8_t chip_type;
 	uint8_t chip_id;
 }chip_tpc1s4tr_impl;
 
-static void tpc116s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,uint8_t* data);
-static void tpc112s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,uint8_t* data);
+static void tpc116s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,uint16_t data);
+static void tpc112s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,uint16_t data);
 static uint8_t set_data(chip_tpc1s4tr_channel_t channel,uint8_t* data,uint8_t chip_type);
 static void send_data(struct dev_spi* ptr_dev_spi,uint8_t* data,uint8_t data_len);
+static void set_output(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,double out_put);
 
-static void enable(struct tpc1s4tr_t* self);
-static void disable(struct tpc1s4tr_t* self);
+static void enable_cs(struct tpc1s4tr_t* self);
+static void disable_cs(struct tpc1s4tr_t* self);
 
 static struct chip_tpc1s4tr_vt s_tpc116s4tr_vt={
 	.write = tpc116s4tr_write,
-	.enable = enable,
-	.disable = disable,
+	.enable_cs = enable_cs,
+	.disable_cs = disable_cs,
+	.set_output = set_output,
 };
 
 static struct chip_tpc1s4tr_vt s_tpc112s4tr_vt={
 	.write = tpc112s4tr_write,
-	.enable = enable,
-	.disable = disable,
+	.enable_cs = enable_cs,
+	.disable_cs = disable_cs,
+	.set_output = set_output,
 };
 
 static chip_tpc1s4tr_impl s_chip_tpc1s4tr_list[CHIP_TPC1S4TR_NUM]={};
@@ -77,9 +82,11 @@ static chip_tpc1s4tr_impl s_chip_tpc1s4tr_list[CHIP_TPC1S4TR_NUM]={};
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static void enable(struct tpc1s4tr_t* self) {
+static void enable_cs(struct tpc1s4tr_t* self) {
 	chip_tpc1s4tr_impl* this = (chip_tpc1s4tr_impl*)self;
-	this->n_en_pin->vt->set_down(this->n_en_pin);
+	this->ptr_dev_spi->vt->fall_cs(this->ptr_dev_spi);
+	this->load_pin->vt->set_down(this->load_pin);
+	// this->n_en_pin->vt->set_down(this->n_en_pin);
 }
 
 /*********************************************************************************************************
@@ -89,29 +96,12 @@ static void enable(struct tpc1s4tr_t* self) {
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static void disable(struct tpc1s4tr_t* self) {
+static void disable_cs(struct tpc1s4tr_t* self) {
 	chip_tpc1s4tr_impl* this = (chip_tpc1s4tr_impl*)self;
-	this->n_en_pin->vt->set_up(this->n_en_pin);
-}
+	this->ptr_dev_spi->vt->rise_cs(this->ptr_dev_spi);
+	this->load_pin->vt->set_up(this->load_pin);
 
-/*********************************************************************************************************
-*   send data
-*
-*   @param   self    the spi dev
-*   @param   channel  send buffer
-*   @param   data     send length
-*   @return  void
-*   @note
-*********************************************************************************************************/
-static void tpc116s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel, uint8_t* data) {
-	chip_tpc1s4tr_impl* this = (chip_tpc1s4tr_impl*)self;
-
-	if (set_data(channel,data,this->chip_type)) {
-		BSP_Assert(0,"tpc112s4tr fail to send data",this->chip_id);
-		return;
-	}
-
-	send_data(this->ptr_dev_spi,data,3);
+	// this->n_en_pin->vt->set_up(this->n_en_pin);
 }
 
 /*********************************************************************************************************
@@ -123,15 +113,47 @@ static void tpc116s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t cha
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static void tpc112s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel, uint8_t* data) {
+static void tpc116s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel, uint16_t data) {
+	chip_tpc1s4tr_impl* this = (chip_tpc1s4tr_impl*)self;
+	
+	uint8_t bytes_to_send[3] = {0};
+	bytes_to_send[0] = (data >> 8) & 0xff;
+	bytes_to_send[1] = data & 0xff;
+
+	// *bytes_to_send = data;
+	// bytes_to_send[]
+
+	if (set_data(channel,bytes_to_send,this->chip_type)) {
+		BSP_Assert(0,"tpc116s4tr fail to send data",this->chip_id);
+		return;
+	}
+
+	send_data(this->ptr_dev_spi,bytes_to_send,3);
+}
+
+/*********************************************************************************************************
+*   send data
+*
+*   @param   self    the spi dev
+*   @param   channel  send buffer
+*   @param   data     send length
+*   @return  void
+*   @note
+*********************************************************************************************************/
+static void tpc112s4tr_write(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel, uint16_t data) {
 	chip_tpc1s4tr_impl* this = (chip_tpc1s4tr_impl*)self;
 
-	if (set_data(channel,data,this->chip_type)) {
+	// 小端存储
+	uint8_t bytes_to_send[2] = {0};
+	bytes_to_send[0] = (data >> 8) & 0xff;
+	bytes_to_send[1] = data & 0xff;
+
+	if (set_data(channel,bytes_to_send,this->chip_type)) {
 		BSP_Assert(0,"tpc112s4tr fail to send data",this->chip_id);
 		return;
 	}
 
-	send_data(this->ptr_dev_spi,data,2);
+	send_data(this->ptr_dev_spi,bytes_to_send,2);
 }
 
 /*********************************************************************************************************
@@ -173,7 +195,7 @@ static uint8_t set_data(chip_tpc1s4tr_channel_t channel,uint8_t* data,uint8_t ch
 		default: return 0;
 	}
 
-	// 2. 获取原始 16 位数据（假设 data[0] 是高字节，data[1] 是低字节）
+	// 2. 获取原始 16 位数据 默认是小端模式
 	uint16_t raw_value = ((uint16_t)data[0] << 8) | data[1];
 
 	// 3. 根据芯片类型提取有效数据，并准备好通道码（只取低4位）
@@ -204,6 +226,37 @@ static uint8_t set_data(chip_tpc1s4tr_channel_t channel,uint8_t* data,uint8_t ch
 }
 
 /*********************************************************************************************************
+*   pull up the pin
+*
+*   @param   conf  the gpio dev
+*   @return  void
+*   @note   
+*********************************************************************************************************/
+static void set_output(struct tpc1s4tr_t* self,chip_tpc1s4tr_channel_t channel,double out_put){
+	chip_tpc1s4tr_impl* this = (chip_tpc1s4tr_impl*)self;
+
+	if(this->ref <= 0.0f){ // ref有问题则
+		return;
+	}
+
+	uint16_t full_val = 0;
+	uint16_t dac_val =0;
+	if(this->chip_type == 1){ // 116芯片
+		full_val = ~ (uint16_t)(0);
+		dac_val = (1.0*out_put / this->ref) * full_val;
+		tpc116s4tr_write(self,channel,dac_val);
+
+	} else {
+		full_val = ~ (uint16_t) (0xf000);
+		uint16_t dac_val = (1.0*out_put / this->ref) * full_val;
+		tpc112s4tr_write(self,channel,dac_val);
+	}
+
+
+	// send_data(self,&dac_val,3);
+}
+
+/*********************************************************************************************************
 *                                              API
 *********************************************************************************************************/
 /*********************************************************************************************************
@@ -219,9 +272,11 @@ void TPC1S4_DevRegister(void* conf) {
 	// printf("The GPIO_NUM is %d,s_cnt is %d\r\n",GPIO_NUM,s_cnt);
 	BSP_Assert(s_cnt < CHIP_TPC1S4TR_NUM,"Fail to register the TPC1S4 chip",s_cnt);
 
-
 	chip_tpc1s4tr_impl* obj = &s_chip_tpc1s4tr_list[s_cnt++];
 	chip_tpc1s4tr_config_t* chip_conf = (chip_tpc1s4tr_config_t*)conf;
+
+	BSP_Assert(chip_conf->ref > 0,"[TPC1S4] refv can't be negative",s_cnt);
+
 
 	obj->ref = chip_conf->ref;
 	obj->chip_type = chip_conf->chip_type;
@@ -234,7 +289,7 @@ void TPC1S4_DevRegister(void* conf) {
 	}
 	obj->chip_id = s_cnt-1;
 	obj->ptr_dev_spi = chip_conf->ptr_dev_spi;
-	obj->n_en_pin = chip_conf->n_en_pin;
+	obj->load_pin = chip_conf->load_pin;
 
 }
 
