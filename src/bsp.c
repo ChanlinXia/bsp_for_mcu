@@ -9,6 +9,7 @@
 
 #include "bsp_pwm_pair.h"
 #include "spi.h"
+#include "stm32f4xx_hal_gpio.h"
 
 /*********************************************************************************************************
 *                                              Header File
@@ -21,13 +22,26 @@
 /*********************************************************************************************************
 *                                              Structure
 *********************************************************************************************************/
+// ========== 添加宏保护，与第一段一致 ==========
 static uint8_t s_dev_satrt_list[] = {
+#if defined(DEV_GPIO_NUM)
     ENUM_DEVICE_GPIO_START,
+#endif
+#if defined(DEV_ADC_NUM)
     ENUM_DEVICE_ADC_START,
+#endif
+#if defined(DEV_SPI_NUM)
     ENUM_DEVICE_SPI_START,
+#endif
+#if defined(DEV_PWM_NUM)
     ENUM_DEVICE_PWM_START,
-    ENUM_DEVICE_PWM_PAIR_START,
+#endif
+// #if defined(DEV_PWM_PAIR_NUM)   // 原注释掉了，保留注释
+//     ENUM_DEVICE_PWM_PAIR_START,
+// #endif
+#if defined(CHIP_TPC1_S4_NUM)
     ENUM_CHIP_TPC1_S4_START,
+#endif
     ENUM_DEVICE_MAX
     };
 
@@ -36,27 +50,37 @@ static uint8_t s_dev_satrt_list[] = {
 *********************************************************************************************************/
 static void _BSP_Register(ENUM_BSP_ID dev_type,void* config) {
     switch (dev_type) { // use register fun for different device here
+#if defined(DEV_GPIO_NUM)
         case ENUM_DEVICE_GPIO_START:
             GPIO_DevRegister(config);
             break;
+#endif
         // case ENUM_DEVICE_ADC_START:
         //     break;
 
+#if defined(DEV_SPI_NUM)
         case ENUM_DEVICE_SPI_START:
             SPI_DevRegister(config);
             break;
+#endif
 
+#if defined(DEV_PWM_NUM)
         case ENUM_DEVICE_PWM_START:
             PWM_DevRegister(config);
             break;
+#endif
 
-        case ENUM_DEVICE_PWM_PAIR_START:
-            PWMPair_DevRegister(config);
-            break;
+        // #if defined(DEV_PWM_PAIR_NUM)
+        // case ENUM_DEVICE_PWM_PAIR_START:
+        //     PWMPair_DevRegister(config);
+        //     break;
+        // #endif
 
+#if defined(CHIP_TPC1_S4_NUM)
         case ENUM_CHIP_TPC1_S4_START:
             TPC1S4_DevRegister(config);
             break;
+#endif
 
         default:
             break;
@@ -66,28 +90,38 @@ static void _BSP_Register(ENUM_BSP_ID dev_type,void* config) {
 static void* _BSP_GetById(ENUM_BSP_ID dev_type,uint8_t ind) {
     void* p_dev = 0;
     switch (dev_type) { // use register fun for different device here
+#if defined(DEV_GPIO_NUM)
         case ENUM_DEVICE_GPIO_START:
             GPIO_DevGet((struct dev_gpio**)&p_dev,ind);
             break;
+#endif
 
         // case ENUM_DEVICE_ADC_START:
         //     break;
 
+#if defined(DEV_SPI_NUM)
         case ENUM_DEVICE_SPI_START:
             SPI_DevGet((struct dev_spi**)&p_dev,ind);
             break;
+#endif
 
+#if defined(DEV_PWM_NUM)
         case ENUM_DEVICE_PWM_START:
             PWM_DevGet((struct dev_pwm**)&p_dev,ind);
             break;
+#endif
 
-        case ENUM_DEVICE_PWM_PAIR_START:
-            PWMPair_DevGet((struct dev_pwm_pair**)&p_dev,ind);
-            break;
+        // #if defined(DEV_PWM_PAIR_NUM)
+        // case ENUM_DEVICE_PWM_PAIR_START:
+        //     PWMPair_DevGet((struct dev_pwm_pair**)&p_dev,ind);
+        //     break;
+        // #endif
 
+#if defined(CHIP_TPC1_S4_NUM)
         case ENUM_CHIP_TPC1_S4_START:
             TPC1S4_DevGet((struct tpc1s4tr_t**)&p_dev,ind);
             break;
+#endif
 
         default:
             break;
@@ -113,108 +147,106 @@ static void _BSP_Debug(const char* debug_info) {
 *********************************************************************************************************/
 void BSP_Init(void) {
 
-    void* register_list[]={
-        // gpio
-        &(dev_gpio_conf){GPIOB,GPIO_PIN_14}, 
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_1},  
-        &(dev_gpio_conf){GPIOC,GPIO_PIN_8},  
-        &(dev_gpio_conf){GPIOB,GPIO_PIN_1},  
-        &(dev_gpio_conf){GPIOC,GPIO_PIN_4},  
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_5},  
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_5},  
+    // ========== GPIO (包括 LED) ==========
+#if defined(DEV_GPIO_NUM) && (DEV_GPIO_NUM > 0)
+    // 定义 GPIO 配置数组（来自原 register_list）
+    dev_gpio_conf gpio_configs[] = {
+    // ========== GPIO 部分（对应 ENUM_DEVICE_GPIO_*） ==========
+    {GPIOB, GPIO_PIN_14},                        
 
-        // led
-        &(dev_gpio_conf){GPIOC,GPIO_PIN_9,GPIO_PIN_RESET},  
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_8,GPIO_PIN_RESET},  
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_9,GPIO_PIN_RESET},  
-        &(dev_gpio_conf){GPIOA,GPIO_PIN_9,GPIO_PIN_RESET},  
-        &(dev_gpio_conf){GPIOB,GPIO_PIN_15,GPIO_PIN_RESET}, 
-        // &(dev_gpio_conf){GPIOD,GPIO_PIN_2},
 
-        // ADC
-        &(dev_adc_conf){&hadc1},
+    // ========== LED 部分（对应 ENUM_DEVICE_LED_*） ==========
+    {GPIOC, GPIO_PIN_9, GPIO_PIN_RESET},            // ENUM_DEVICE_LED_POWER_G      (PC9: 电源绿)
+    };
+    for (uint32_t i = 0; i < sizeof(gpio_configs)/sizeof(dev_gpio_conf); i++) {
+        GPIO_DevRegister((void*)&gpio_configs[i]);
+    }
+#endif // GPIO
 
-        // SPI
-        &(dev_spi_conf){ // DAC Chip
+    // ========== ADC ==========
+#if defined(DEV_ADC_NUM) && (DEV_ADC_NUM > 0)
+    dev_adc_conf adc_configs[] = {
+        {&hadc1},
+    };
+    for (uint32_t i = 0; i < sizeof(adc_configs)/sizeof(dev_adc_conf); i++) {
+        // ADC_DevRegister((void*)&adc_configs[i]);  // 若需要可取消注释
+    }
+#endif
+
+    // ========== SPI ==========
+#if defined(DEV_SPI_NUM) && (DEV_SPI_NUM > 0)
+    dev_spi_conf spi_configs[] = {
+        { // DAC Chip
             .hspi = &hspi1,
-            .cs_pin = BSP_GetDevice(ENUM_DEVICE_GPIO_DAC_CHIP_EN),
+            .cs_pin = BSP_GetDevice(ENUM_DEVICE_GPIO_DAC_CHIP_CS),
             .use_soft_cs = 0
         },
+        // 若还有其他 SPI 可在此添加
+    };
+    for (uint32_t i = 0; i < sizeof(spi_configs)/sizeof(dev_spi_conf); i++) {
+        SPI_DevRegister((void*)&spi_configs[i]);
+    }
+#endif
 
-        // &(dev_spi_conf){
-        //     .hspi = &hspi3,
-        //     .cs_pin = BSP_GetDevice(ENUM_DEVICE_GPIO_DAC_CHIP_EN),
-        //     .use_soft_cs = 0
-        // },
+    // ========== PWM ==========
+#if defined(DEV_PWM_NUM) && (DEV_PWM_NUM > 0)
+    dev_pwm_basic_config pwm_configs[] = {
 
-        // PWM
-        &(dev_pwm_basic_config){&htim8, TIM_CHANNEL_1, M_Hz(BSP_PCLK2*2)},
-        &(dev_pwm_basic_config){&htim8, TIM_CHANNEL_2,M_Hz (BSP_PCLK2*2)}, 
+    };
+    for (uint32_t i = 0; i < sizeof(pwm_configs)/sizeof(dev_pwm_basic_config); i++) {
+        PWM_DevRegister((void*)&pwm_configs[i]);
+    }
+#endif
 
-        &(dev_pwm_basic_config){&htim2, TIM_CHANNEL_3,M_Hz (BSP_PCLK1*2)}, 
-        &(dev_pwm_basic_config){&htim2, TIM_CHANNEL_4,M_Hz (BSP_PCLK1*2)}, 
-
-        &(dev_pwm_basic_config){&htim3, TIM_CHANNEL_1,M_Hz (BSP_PCLK1*2)}, 
-        &(dev_pwm_basic_config){&htim3, TIM_CHANNEL_2,M_Hz (BSP_PCLK1*2)},
-
-        &(dev_pwm_basic_config){&htim9, TIM_CHANNEL_1,M_Hz (BSP_PCLK2*2)}, 
-        &(dev_pwm_basic_config){&htim9, TIM_CHANNEL_2, M_Hz(BSP_PCLK2*2)}, 
-
-        // PWM_PAIR
-        &(dev_pwm_pair_conf){ // pwm_pair 1 (for birdge)
+    // ========== PWM_PAIR ==========
+#if defined(DEV_PWM_PAIR_NUM) && (DEV_PWM_PAIR_NUM > 0)
+    dev_pwm_pair_conf pair_configs[] = {
+        { // pwm_pair 1
             .pwm_h = BSP_GetDevice(ENUM_DEVICE_PWM_BRIDGE_H_1),
             .pwm_l = BSP_GetDevice(ENUM_DEVICE_PWM_BRIDGE_L_1),
             .dma_enabled = 0,
             .dead_time_tick = 20,
         },
-
-        &(dev_pwm_pair_conf){ // pwm_pair 2 (for birdge)
+        { // pwm_pair 2
             .pwm_h = BSP_GetDevice(ENUM_DEVICE_PWM_BRIDGE_H_2),
             .pwm_l = BSP_GetDevice(ENUM_DEVICE_PWM_BRIDGE_L_2),
             .dma_enabled = 1,
             .dead_time_tick = 20,
         },
-
-        &(dev_pwm_pair_conf){ // pwm_pair 3 (for birdge)
+        { // pwm_pair 3
             .pwm_h = BSP_GetDevice(ENUM_DEVICE_PWM_BRIDGE_H_3),
             .pwm_l = BSP_GetDevice(ENUM_DEVICE_PWM_BRIDGE_L_3),
             .dma_enabled = 1,
             .dead_time_tick = 20,
         },
-
-        &(dev_pwm_pair_conf){ // pwm_pair 2 (for birdge)
+        { // pwm_pair 4
             .pwm_h = BSP_GetDevice(ENUM_DEVICE_PWM_BRIDGE_H_4),
             .pwm_l = BSP_GetDevice(ENUM_DEVICE_PWM_BRIDGE_L_4),
             .dma_enabled = 1,
             .dead_time_tick = 20,
         },
+    };
+    for (uint32_t i = 0; i < sizeof(pair_configs)/sizeof(pair_configs[0]); i++) {
+        PWMPair_DevRegister((void*)&pair_configs[i]);
+    }
+#endif
 
-        /*
-         * Chip
-         */
-        // CHIP_TPC1_S4
-        &(chip_tpc1s4tr_config_t){
+    // ========== Chip TPC1_S4 ==========
+#if defined(CHIP_TPC1_S4_NUM) && (CHIP_TPC1_S4_NUM > 0)
+    chip_tpc1s4tr_config_t chip_tpc1_configs[] = {
+        {
             .ref = 2.048,
             .ptr_dev_spi = BSP_GetDevice(ENUM_DEVICE_SPI1_DAC_CHIP),
-            .chip_type=1	// 1:116 0:112
+            .chip_type = 1,    // 1:116 0:112
+            .load_pin = BSP_GetDevice(ENUM_DEVICE_GPIO_DAC_CHIP_LOAD),
         }
     };
+    for (uint32_t i = 0; i < sizeof(chip_tpc1_configs)/sizeof(chip_tpc1s4tr_config_t); i++) {
+        TPC1S4_DevRegister((void*)&chip_tpc1_configs[i]);
+    }
+#endif
 
-    int i =0,j=0;
-    ENUM_DEVICE_ID dev_type = 0;
-
-    do {
-        // printf("i val :%d\r\n",i);
-        if (i == s_dev_satrt_list[j]) {
-            dev_type = s_dev_satrt_list[j];
-            ++i;
-            ++j;
-            continue;
-        }
-        _BSP_Register(dev_type,register_list[i-j]);
-        i++;
-    }while (ENUM_DEVICE_MAX != dev_type);
-
+    // 延时初始化（总是需要）
     delay_init(BSP_SYSCLK);
 }
 
@@ -248,5 +280,3 @@ void* BSP_GetDevice(ENUM_BSP_ID id) {
     printf("the device ind of devs:%d\r\n",id-dev_type-1);
     return _BSP_GetById(dev_type,id-dev_type-1);
 }
-
-

@@ -63,9 +63,8 @@ static void  set_freq(struct dev_pwm_pair* self, uint32_t hz);
 static void pwm_default_set(dev_pwm_pair_impl* self);
 static uint8_t is_pair_oc_reg_valid(dev_pwm_pair_impl* self);
 static void dma_sw(dev_pwm_pair_impl* self,uint8_t sw);
-static uint32_t time_to_tick(uint32_t time,const dev_pwm_oc_config* oc_config);
-static uint32_t tick_to_time(uint32_t tick,const dev_pwm_oc_config* htim);
-
+// static uint32_t time_to_tick(uint32_t time,const dev_pwm_oc_config* oc_config);
+// static uint32_t tick_to_time(uint32_t tick,const dev_pwm_oc_config* htim);
 
 static const struct dev_pwm_pair_vt s_pwm_pair_vts={
 	.start=start,
@@ -206,7 +205,7 @@ static void  set_duty(struct dev_pwm_pair* self,double target_duty) {
 	if(ccr_h + dead >= arr) ccr_l = 0;
 	else ccr_l = ccr_h+dead;
 
-	if (this->config.dma_enabled) {	// 如果可用DMA
+	if (this->config.dma_enabled) {	// 如果可用DMA，写入新值
 		dma_sw(this,0);
 
 		this->oc_reg_dma_buf[0]=ccr_h;
@@ -214,7 +213,7 @@ static void  set_duty(struct dev_pwm_pair* self,double target_duty) {
 
 		dma_sw(this,1);
 	}
-	else { // 否则，只能软件写入
+	else { // 否则，只能软件写入，这会引入延迟，后果不可估计，复杂系统建议不用
 		this->config.pwm_h->vt->set_duty_regv(this->config.pwm_h,ccr_h);
 		this->config.pwm_l->vt->set_duty_regv(this->config.pwm_l,ccr_l);
 	}
@@ -232,8 +231,9 @@ static void  set_duty(struct dev_pwm_pair* self,double target_duty) {
 static void  set_freq(struct dev_pwm_pair* self, uint32_t hz) {
 	dev_pwm_pair_impl* this = (dev_pwm_pair_impl*)self;
 
-	int auto_reload = this->config.pwm_h->vt->set_freq(this->config.pwm_h,hz);
-	this->config.pwm_l->vt->set_freq(this->config.pwm_l,hz);
+	// [TODO] fix the resolution in pwm_pair
+	int auto_reload = this->config.pwm_h->vt->set_freq(this->config.pwm_h,hz,1000);
+	this->config.pwm_l->vt->set_freq(this->config.pwm_l,hz,1000);
 
 	// update duty value
 	set_duty(self,this->config.pwm_h->vt->get_duty(this->config.pwm_h));
@@ -250,33 +250,7 @@ static void  set_freq(struct dev_pwm_pair* self, uint32_t hz) {
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static uint32_t time_to_tick(uint32_t time,const dev_pwm_oc_config* oc_config)
-{
-	uint32_t timer_clk;
-	uint32_t psc;
 
-	/*
-	 * get timer clock
-	 */
-	timer_clk = oc_config->timer_clock;
-
-	/*
-	 * timer prescaler
-	 */
-	psc = oc_config->htim->Instance->PSC;
-
-
-	uint64_t cnt_freq;
-
-	cnt_freq = timer_clk / (psc+1);
-
-
-	/*
-	 * us -> tick
-	 */
-	return (uint32_t)
-		(((uint64_t)time * cnt_freq) / 1000000);
-}
 
 /*********************************************************************************************************
 *   set the freq
@@ -285,21 +259,21 @@ static uint32_t time_to_tick(uint32_t time,const dev_pwm_oc_config* oc_config)
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static uint32_t tick_to_time(uint32_t tick,const dev_pwm_oc_config* oc_config){
-	uint32_t timer_clk;
-	uint32_t psc;
-
-	timer_clk = oc_config->timer_clock;
-
-	psc = oc_config->htim->Instance->PSC;
-
-	uint64_t cnt_freq;
-	cnt_freq = timer_clk/(psc+1);
-
-	return (uint32_t)
-		(((uint64_t)tick * 1000000)
-		/ cnt_freq);
-}
+// static uint32_t tick_to_time(uint32_t tick,const dev_pwm_oc_config* oc_config){
+// 	uint32_t timer_clk;
+// 	uint32_t psc;
+//
+// 	timer_clk = oc_config->timer_clock;
+//
+// 	psc = oc_config->htim->Instance->PSC;
+//
+// 	uint64_t cnt_freq;
+// 	cnt_freq = timer_clk/(psc+1);
+//
+// 	return (uint32_t)
+// 		(((uint64_t)tick * 1000000)
+// 		/ cnt_freq);
+// }
 
 /*********************************************************************************************************
 *   default setting
@@ -401,7 +375,7 @@ void PWMPair_DevRegister(void* conf) {
 
 	BSP_Assert(config != NULL,"[PWMPair] The conf is null",dev_ind);
 
-	BSP_Assert(dev_ind < DEV_PWM_PAIR_NUM,
+	BSP_Assert(dev_ind < PWM_PAIR_NUM,
 		"[PWMPair] The index is out of range",dev_ind);
 
 	dev_pwm_oc_config* oc_conf_h = config->pwm_h->vt->get_oc_config_ptr(config->pwm_h);
@@ -431,7 +405,7 @@ void PWMPair_DevRegister(void* conf) {
 	this->dev.vt = &s_pwm_pair_vts;
 
 	// 默认设置
-	pwm_default_set(this);
+	// pwm_default_set(this);
 }
 
 /*********************************************************************************************************
@@ -442,7 +416,7 @@ void PWMPair_DevRegister(void* conf) {
 *   @note
 *********************************************************************************************************/
 void PWMPair_DevGet(struct dev_pwm_pair** obj, uint8_t ind) {
-	BSP_Assert(ind < DEV_PWM_PAIR_NUM,
+	BSP_Assert(ind < PWM_PAIR_NUM,
 		"[PWMPair] The index is out of range",ind);
 
 	*obj = (struct dev_pwm_pair*)&s_pwm_pairs[ind];

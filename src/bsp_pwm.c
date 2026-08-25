@@ -45,16 +45,54 @@ static void  disable(struct dev_pwm* self);
 
 static void  set_duty(struct dev_pwm* self, double duty);
 static double get_duty(struct dev_pwm* self);
-static uint16_t set_freq(struct dev_pwm* self, uint32_t hz);
+static uint16_t set_freq(struct dev_pwm* self, uint32_t hz,uint32_t min_resolution);
 static void  set_duty_regv(struct dev_pwm* self, uint32_t reg_val);
 static dev_pwm_oc_config* get_oc_config_ptr(struct dev_pwm* self);
-
+static void set_duty_us(struct dev_pwm* self, uint32_t nus);
 static void update_oc_config(struct dev_pwm* self);
 
 static void dev_pwm_sync_oc_config(TIM_HandleTypeDef *htim, uint32_t channel,
                            uint32_t timer_clock, dev_pwm_oc_config *out_cfg);
 
 static void dev_pwm_load_oc_config(const dev_pwm_oc_config *cfg);
+
+uint32_t pwm_calc_prescaler(
+    uint32_t timer_clk,
+    uint32_t frequency,
+    uint32_t arr_max)
+{
+    if (timer_clk == 0 || frequency == 0)
+    {
+        return 0;
+    }
+
+
+    uint64_t denominator =
+        (uint64_t)frequency *
+        (arr_max + 1);
+
+
+    /*
+     * ceil(timer_clk / denominator)
+     *
+     */
+    uint32_t divider =
+        (timer_clk + denominator - 1)
+        /
+        denominator;
+
+
+    /*
+     * divider = PSC + 1
+     */
+    if (divider == 0)
+    {
+        divider = 1;
+    }
+
+
+    return divider - 1;
+}
 
 // static device list
 static struct dev_pwm_impl s_dev_pwm_list[PWM_NUM] = {};
@@ -68,7 +106,7 @@ static struct dev_pwm_vt s_pwm_vt = {
     .get_duty = get_duty,
     .set_freq = set_freq,
     .get_oc_config_ptr=get_oc_config_ptr,
-
+    .set_duty_us = set_duty_us,
     .update_oc_config=update_oc_config
 };
 
@@ -156,6 +194,21 @@ static double get_duty(struct dev_pwm* self)
 }
 
 /*********************************************************************************************************
+*   get pwm duty cycle
+*
+*   @param   self  the pwm dev
+*   @return  duty (%)
+*   @note
+*********************************************************************************************************/
+static void set_duty_us(struct dev_pwm* self, uint32_t nus) {
+    struct dev_pwm_impl* this = (struct dev_pwm_impl*)self;
+
+    uint32_t ccr = time_to_tick(nus,&this->oc_config);
+
+    set_duty_regv(self,ccr);
+}
+
+/*********************************************************************************************************
 *   set pwm frequency
 *
 *   @param   self  the pwm dev
@@ -163,40 +216,102 @@ static double get_duty(struct dev_pwm* self)
 *   @return  void
 *   @note
 *********************************************************************************************************/
-static uint16_t set_freq(struct dev_pwm* self, uint32_t hz)
+static uint16_t set_freq(
+    struct dev_pwm* self,
+    uint32_t hz,
+    uint32_t arr_max)
 {
-    struct dev_pwm_impl* this = (struct dev_pwm_impl*)self;
+    struct dev_pwm_impl* this =
+        (struct dev_pwm_impl*)self;
 
-    if (this == NULL || this->oc_config.htim == NULL || hz == 0)
+
+    if (this == NULL ||
+        this->oc_config.htim == NULL ||
+        hz == 0)
+    {
         return 0;
+    }
 
-    this->freq = hz;
 
-    uint32_t timer_clk = this->oc_config.timer_clock;
+    uint32_t timer_clk =
+        this->oc_config.timer_clock;
 
-    uint32_t total = timer_clk / hz; //  一周期时钟数
-    if (total < 1) total = 1;
 
-    // 确定预分频器系数 (PSC+1) 和自动重载值 (ARR+1) [TODO] 不同bit的定时器寄存器要做适配
-    uint32_t psc_plus1 = (total + 65535) / 65536;   // 向上取整
-    if (psc_plus1 < 1)   psc_plus1 = 1;
-    if (psc_plus1 > 65536) psc_plus1 = 65536;      // 硬件上限
+    /*
+     * Step1:
+     * 初始计算 PSC
+     */
+    uint32_t psc =
+        pwm_calc_prescaler(
+            timer_clk,
+            hz,
+            arr_max);
 
-    // 由 (PSC+1) 计算出 (ARR+1)
-    uint32_t arr_plus1 = total / psc_plus1;
-    if (arr_plus1 < 1)   arr_plus1 = 1;
-    if (arr_plus1 > 65536) arr_plus1 = 65536;
 
-    // 最终寄存器值 = 计算值 - 1
-    uint32_t psc = psc_plus1 - 1;
-    uint32_t arr = arr_plus1 - 1;
 
-    // 写入定时器寄存器（使用HAL宏，无需重新初始化定时器）
-    __HAL_TIM_SET_PRESCALER(this->oc_config.htim, psc);
-    __HAL_TIM_SET_AUTORELOAD(this->oc_config.htim, arr);
+    /*
+     * Step2:
+     * 计算 ARR
+     */
+    uint64_t arr =
+        (uint64_t)timer_clk /
+        ((uint64_t)(psc + 1) * hz);
 
-    return arr;
+
+    if (arr > 0)
+    {
+        arr -= 1;
+    }
+
+
+
+    /*
+     * Step3:
+     * ARR溢出修正
+     */
+    if (arr > arr_max)
+    {
+        /*
+         * 固定 ARR 最大
+         *
+         * ARR+1 = arr_max+1
+         *
+         * PSC+1 =
+         * timer_clk /
+         * (freq*(ARR+1))
+         */
+
+
+        psc =
+            ((uint64_t)timer_clk /
+            ((uint64_t)hz *
+             (arr_max + 1)))
+            - 1;
+
+
+        arr = arr_max;
+    }
+
+
+
+    /*
+     * Step4:
+     * 写寄存器
+     */
+
+    __HAL_TIM_SET_PRESCALER(
+        this->oc_config.htim,
+        psc);
+
+
+    __HAL_TIM_SET_AUTORELOAD(
+        this->oc_config.htim,
+        (uint32_t)arr);
+
+
+    return (uint16_t)arr;
 }
+
 /*********************************************************************************************************
 *   set pwm frequency
 *
@@ -343,16 +458,28 @@ static void dev_pwm_load_oc_config(const dev_pwm_oc_config *cfg)
      * CCER polarity
      * Output compare mode
      */
-    HAL_StatusTypeDef ret;
+    HAL_StatusTypeDef ret = HAL_OK;
 
-    ret = HAL_TIM_PWM_ConfigChannel(
-                cfg->htim,
-                &oc_cfg,
-                cfg->channel);
+    if (cfg->mode == TIM_OCMODE_PWM1 ||
+        cfg->mode == TIM_OCMODE_PWM2 ) {
+        ret = HAL_TIM_PWM_ConfigChannel(
+            cfg->htim,
+            &oc_cfg,
+            cfg->channel);
+    }
+    else {
+        ret = HAL_TIM_OC_ConfigChannel(
+                   cfg->htim,
+                   &oc_cfg,
+                   cfg->channel);
+    }
+
+
 
 
     if(ret != HAL_OK)
     {
+        printf("fail to load pwm config\r\n");
         return;
     }
 
@@ -396,64 +523,68 @@ static void dev_pwm_load_oc_config(const dev_pwm_oc_config *cfg)
     /*
      * Channel output enable
      */
-    if(cfg->output_enable)
+    if(cfg->output_enable == 1)
     {
         HAL_TIM_PWM_Start(cfg->htim,cfg->channel);
     }
-    else
+    else if (cfg->output_enable == 0)
     {
         HAL_TIM_PWM_Stop(cfg->htim,cfg->channel);
+    }
+    else {
+        HAL_TIM_OC_Stop(cfg->htim,cfg->channel);
+
     }
 
     /*
      * Advanced timer complementary output
      *
      */
-    if(IS_ADVANCE_TIM(cfg->htim->Instance))
-    {
-
-        /*
-         * Dead time configuration
-         *
-         * cfg->dead_time:
-         * HAL BDTR.DeadTime value
-         */
-        TIM_BreakDeadTimeConfigTypeDef bdtr = {0};
-
-
-        bdtr.DeadTime = cfg->dead_time;
-
-
-        /*
-         * keep other safety options default.
-         * pwm_pair will configure them later.
-         */
-        bdtr.AutomaticOutput =
-                TIM_AUTOMATICOUTPUT_ENABLE;
-
-
-        HAL_TIMEx_ConfigBreakDeadTime(
-                cfg->htim,
-                &bdtr);
-
-
-        /*
-         * Enable complementary output
-         */
-        if(cfg->complement_enable)
-        {
-            HAL_TIMEx_PWMN_Start(
-                    cfg->htim,
-                    cfg->channel);
-        }
-        else
-        {
-            HAL_TIMEx_PWMN_Stop(
-                    cfg->htim,
-                    cfg->channel);
-        }
-
-    }
+    // if(IS_ADVANCE_TIM(cfg->htim->Instance))
+    // {
+    //
+    //     /*
+    //      * Dead time configuration
+    //      *
+    //      * cfg->dead_time:
+    //      * HAL BDTR.DeadTime value
+    //      */
+    //     TIM_BreakDeadTimeConfigTypeDef bdtr = {0};
+    //
+    //
+    //     bdtr.DeadTime = cfg->dead_time;
+    //
+    //
+    //     /*
+    //      * keep other safety options default.
+    //      * pwm_pair will configure them later.
+    //      */
+    //     bdtr.AutomaticOutput =
+    //             TIM_AUTOMATICOUTPUT_ENABLE;
+    //
+    //
+    //     HAL_TIMEx_ConfigBreakDeadTime(
+    //             cfg->htim,
+    //             &bdtr);
+    //
+    //
+    //     /*
+    //      * Enable complementary output
+    //      */
+    //     if(cfg->complement_enable)
+    //     {
+    //         HAL_TIMEx_PWMN_Start(
+    //                 cfg->htim,
+    //                 cfg->channel);
+    //     }
+    //     else
+    //     {
+    //         HAL_TIMEx_PWMN_Stop(
+    //                 cfg->htim,
+    //                 cfg->channel);
+    //     }
+    //
+    // }
 }
 
 /*********************************************************************************************************
