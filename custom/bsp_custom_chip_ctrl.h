@@ -4,8 +4,8 @@
 *   @version  1.0
 *   @update
 *********************************************************************************************************/
-#ifndef BSP_SPI_H
-#define BSP_SPI_H
+#ifndef __BSP_CUSTOM_CHIP_CTRL_H__
+#define __BSP_CUSTOM_CHIP_CTRL_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,53 +15,61 @@ extern "C" {
 *                                               Header File
 *********************************************************************************************************/
 #include "bsp_conf.h"
-#include "stm32f1xx_hal_spi.h"
-
-/*********************************************************************************************************
-*                                               Public Macro
-*********************************************************************************************************/
+#include "bsp_gpio.h"
 
 /*********************************************************************************************************
 *                                               Public Declaration
 *********************************************************************************************************/
-struct dev_spi;
+typedef enum {
+    ENUM_STIM_CTRL_OFF=0,
+    ENUM_STIM_CTRL_STIM,
+    ENUM_STIM_CTRL_H1,
+    ENUM_STIM_CTRL_H1_OFF,
 
-struct dev_spi_vt
+    ENUM_STIM_CTRL_H2,
+    ENUM_STIM_CTRL_H2_OFF,
+
+    ENUM_STIM_CTRL_H1_H2,
+    ENUM_STIM_CTRL_MAX
+}stim_chip_ctrl_level_t;
+
+
+struct dev_custom_chip_ctrl;
+
+struct dev_custom_chip_ctrl_vt
 {
-    void (*rise_cs)(struct dev_spi* self);
-    void (*fall_cs)(struct dev_spi* self);
-    void (*transmit)(struct dev_spi* self, uint8_t* tx_buf, uint16_t len);
-    void (*receive)(struct dev_spi* self, uint8_t* rx_buf, uint16_t len);
-    void (*transfer)(struct dev_spi* self, uint8_t* tx_buf, uint8_t* rx_buf, uint16_t len);
+    void (*rise_gen)(struct dev_custom_chip_ctrl* self);
+    void (*fall_gen)(struct dev_custom_chip_ctrl* self);
+
+    void (*set_level)(struct dev_custom_chip_ctrl* self,
+                      uint8_t level);
+    stim_chip_ctrl_level_t (*get_level)(struct dev_custom_chip_ctrl* self);
 };
 
-struct dev_spi
+struct dev_custom_chip_ctrl
 {
-    struct dev_spi_vt* vt;
+    struct dev_custom_chip_ctrl_vt* vt;
 };
 
 typedef struct
 {
-    SPI_HandleTypeDef* hspi;
-    struct dev_gpio* cs_pin;
-    uint8_t use_soft_cs;
-    uint8_t is_soft_spi;
+    struct dev_gpio* begin;
+    struct dev_gpio* stim;
+    struct dev_gpio* h1;
+    struct dev_gpio* h2;
 
-    struct dev_gpio* clk_pin;
-    struct dev_gpio* mosi_pin;
-    struct dev_gpio* miso_pin;
-
-    void (*delay)(void);
-} dev_spi_conf;
+} dev_custom_chip_ctrl_conf;
 
 /*********************************************************************************************************
 *                                               API
 *********************************************************************************************************/
-void SPI_DevRegister(void* conf);
-void SPI_DevGet(struct dev_spi** obj, uint8_t ind);
+void CustomChipCtrl_DevRegister(void* conf);
+
+void CustomChipCtrl_DevGet(struct dev_custom_chip_ctrl** obj,
+                           uint8_t ind);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* BSP_SPI_H */
+#endif

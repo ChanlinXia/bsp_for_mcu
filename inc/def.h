@@ -5,7 +5,7 @@
 #ifndef BSP_DEF_H
 #define BSP_DEF_H
 
-#include "stm32f4xx.h"
+#include "stm32f1xx.h"
 #include <stdint.h>  // 引入标准数据类型定义
 
 //**********************************************************************

@@ -160,12 +160,12 @@ void UART_DevGet(struct dev_uart** obj, uint8_t ind)
 *   @return  int   character sent
 *   @note    Uncomment and implement based on your uart instance
 *********************************************************************************************************/
-int __io_putchar(int ch)
-{
-    /* 发送一个字节到 USART1，超时时间根据需要调整 */
-    HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-    return ch;
-}
+//int __io_putchar(int ch)
+//{
+//    /* 发送一个字节到 USART1，超时时间根据需要调整 */
+//    HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+//    return ch;
+//}
 
 /*********************************************************************************************************
 *   for printf keil compiler

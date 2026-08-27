@@ -13,25 +13,42 @@
 *********************************************************************************************************/
 // all device to be used in the mcu
 
-// header gen by MX
+/*
+ * header gened by MX
+ */
 // #include "adc.h"
-#include "tim.h"
+// #include "tim.h"
+// #include  "spi.h"
+// #include 
 
+/*
+ * sys level
+ */
 #include "bsp_conf.h"
 #include "bsp_delay.h"
 
-#include "bsp_adc.h"
+/*
+ * device in bsp layer
+ */
+// #include "bsp_adc.h"
 #include "bsp_gpio.h"
 
 #include "bsp_spi.h"
 #include "bsp_uart.h"
 
-#include "bsp_pwm.h"
-#include "bsp_pwm_pair.h"
+// #include "bsp_pwm.h"
+// #include "bsp_pwm_pair.h"
 
-#include "TPC1_S4_TR.h"
+/*
+ * chip
+ */
+// #include "TPC1_S4_TR.h"
 
-
+/*
+ * custom device
+ */
+// #include "bsp_custom_chip_ctrl.h"
+// #include "bsp_custom_spi.h"
 
 /*********************************************************************************************************
 *                                              Macro
